@@ -1,0 +1,38 @@
+aws ec2 run-instances \
+--image-id <ami-id> \
+--instance-type <instance-type> \
+--subnet-id <subnet-id> \
+--security-group-ids <security-group-id> <security-group-id> … \
+--key-name <ec2-key-pair-name>
+
+
+aws ec2 run-instances 
+--image-id ami-0cff7528ff583bf9a 
+--instance-type t2.micro 
+--subnet-id subnet-08111bedaabd33979 
+--security-group-ids sg-03108b47482d2ac14 
+--key-name ubuntu1
+
+
+whithout space
+
+aws ec2 terminate-instances --instance-ids id no.
+
+
+
+create AMI
+aws ec2 create-image --name WebServer --instance-id i-069f88eac17c7a64e
+
+Check Instances Create are not
+aws ec2 describe-instances --instance-ids $INSTANCE
+
+Check Instances Running are not
+aws ec2 describe-instances --instance-ids $INSTANCE --query 'Reservations[].Instances[].State.Name' --output text
+
+Instances DNS name get
+aws ec2 describe-instances --instance-ids $INSTANCE --query Reservations[].Instances[].PublicDnsName --output text
+
+
+sg-05d315bf26d0853a7
+
+aws ec2 run-instances --image-id ami-0cff7528ff583bf9a --instance-type t2.micro --subnet-id subnet-08111bedaabd33979 --security-group-ids sg-05d315bf26d0853a7 --key-name ubuntu1

@@ -1,0 +1,236 @@
+/////////CODE//////
+
+    1  pacman -S testdisk
+    2  apt update
+    3  apt install testdisk
+    4  yes
+    5  apt install testdisk
+   12  curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
+   13  sudo apt install curl 
+   14  cd ~
+   15  curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
+   16  cat /etc/apt/sources.list.d/nodesource.list
+   17  sudo apt -y install nodejs
+   23  git remote add origin git@github.com:chiragrathipipra/ChiragUserData.git
+   24  git branch -M main
+   25  git push -u origin main
+   26  git push -u origin master
+   29  sudo dpkg --add-architecture i386
+   30  wget -nc https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
+   33  sudo apt install git
+   34  git init
+   38  git commit -m "first commit"
+   39  git branch -M main
+   40  git remote add origin https://github.com/chiragrathipipra/ChiragUserData.git
+   47  sudo snap install snapd
+   48  sudo snap install core
+   49  sudo snap install notepad-plus-plus
+   50  notepad-plus-plus
+   56  sudo apt-add-repository -y ppa:git-core/ppa
+   57  sudo apt-get update
+   58  sudo apt-get install -y git
+   59  sudo apt install docker.io
+   60  sudo usermod -a -G docker $USER
+   61  sudo apt install docker-compose
+   62  set +e
+   63  COUNT="$(python -V 2>&1 | grep -c 2.)"
+   64  if [ ${COUNT} -ne 1 ]; then    sudo apt-get install -y python-minimal; fi
+   65  python -v
+   66  python -E
+   67  sudo apt-get -y install unzip
+   68  sudo apt install golang-go
+   69  export GOPATH=$HOME/go
+   70  export PATH=$PATH:$GOPATH/bin
+   77  sudo apt install python2-minimal
+   82  sudo groupadd docker
+   83  sudo usermod -aG docker ${USER}
+   84  su -s ${USER}
+   96  sudo apt-get install curl-openssl
+   97  sudo chmod 666 /var/run/docker.sock
+  100  git config --global --unset-all remote.origin.proxy
+  105  git config --global http.sslBackend "openssl"
+  110  git init
+  113  curl -sSL http://bit.ly/2ysbOFE | bash -s -- 1.4.6 1.4.6 0.4.18
+  114  sudo curl -sSL http://bit.ly/2ysbOFE | bash -s -- 1.4.6 1.4.6 0.4.18
+  118  git clone git@github.com:pipra-solution/realmeds.git
+  119  git clone https://github.com/pipra-solution/realmeds.git
+  125  git config --global http.sslVerify false
+  126  curl -sSL http://bit.ly/2ysbOFE | bash -s -- 1.4.6 1.4.6 0.4.18
+  136  cp bin/* /usr/local/bin
+  137  sudo cp bin/* /usr/local/bin
+
+  197  psql -V
+  198  sudo -i -u postgres // inside postgresql 
+
+  243  sudo apt install git
+  245  git --version
+  256  git clone https://github.com/pipra-solution/realmeds.git
+  257  git config --global --unset-all http.sslBackend
+  258  git clone https://github.com/pipra-solution/realmeds.git
+  259  git clone https://github.com/pipra-solution/realmeds-selfcare.git
+  260  git clone https://github.com/pipra-solution/realmeds-analytics.git
+  261  git clone https://github.com/pipra-solution/realmeds-integrations.git
+  262  git remote add origin https://github.com/chiragrathipipra/ChiragUserData.git
+  263  git branch -M main
+  264  git push -u origin main
+  265  git init
+  266  git diff
+  268  git commit -m "first commit"
+  269  git branch -M main
+  270  git remote add origin https://github.com/chiragrathipipra/ChiragUserData.git
+  310  psql -V
+  346  docker ps -a
+  373  sudo chmod 775 generate.sh 
+  374  ./generate.sh 
+  380  sudo chmod 775 start.sh // create any scripting file give executing permission 
+  381  sudo chmod 775 stop.sh 
+  442  docker exec -it 0e2ed51971c9 /bin/bash //go inside the container
+  448  docker run -td -p 7051:7051 6830dcd7b9b5 //go inside the container
+  456  docker logs -f 28481657bd5f //show container log from
+  458  docker inspect 28481657bd5f // this line are using full details in containers
+  511  docker exec -it fe30b1ffbb69 bash //go to inside the container
+  512  docker exec -it fe30b1ffbb69 sh // bash not use then use sh 
+  ---------------------------------------------------------------------------------------------------------------------------------
+  //Complete docker images ,containers and volume remove
+
+  530  docker stop $(docker ps -a -q)
+  531  docker rm -f $(docker ps -aq)
+  532  docker system prune -a
+  533  docker volume prune
+  534  docker ps -a
+  535  docker images -a
+  536  docker volume ls
+
+  -----------------------------------------------------------------------------------------------------------------------------------
+  //above the command use docker images also remove and ./start.sh file not run shoe manifest error using below command and connect docker images
+  537  ./start.sh //show error
+  538  docker images //show empty
+  540  docker pull hyperledger/fabric-ca //letest install posible
+  544  docker pull hyperledger/fabric-orderer //show error 
+  545  docker pull hyperledger/fabric-orderer:x86_64-1.0.0 //this line working properly
+  547  docker pull hyperledger/fabric-peer:2.4
+  548  docker tag hyperledger/fabric-peer:2.4 hyperledger/fabric-peer:latest
+  550  docker pull hyperledger/fabric-couchdb
+  551  docker images //show all images
+  557  ./generate.sh  //generate genessis block,channel and Anchor peeer
+  558  ./start.sh //images pulling then ./start.sh command is running
+  559  docker ps
+  560  ./stop.sh 
+  572  peer version // show version
+  573  orderer version
+  576  ./stop.sh 
+
+// cli , peer and orderer docker images remove ,so pulling this method otherwise show latest manifest error
+  590  docker pull hyperledger/fabric-tools:2.4
+  591  docker tag hyperledger/fabric-tools:2.4 hyperledger/fabric-tools:latest
+  592  docker ps
+  593  docker images
+  594  docker-compose -f ./docker-compose.yml up -d cli
+  595  docker ps
+
+//chaincode code not working
+  596  docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.realmeds.io/users/Admin@org1.realmeds.io/msp" cli peer chaincode install -n basic -v 1.0 -p /opt/gopath/src/github.com/ -l node
+  597  docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.realmeds.io/users/Admin@org1.realmeds.io/msp" cli peer chaincode install -n basic -v 1.1 -p /opt/gopath/src/github.com/ -l node
+
+---------------------------------------------------------------------------------------------------
+//nvm installation 
+  672  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+  673  export NVM_DIR="$HOME/.nvm"
+  674  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  675  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+  676  nvm --version
+  -------------------------------------------------------------------------------------------------
+
+// nvm packeage insatllation
+  687  nvm list
+  688  nvm use 18
+  689  nvm list
+  698  npm init -y
+  699  npm i express
+  700  npm i mongoose
+  701  npm list
+  702  npm i validator
+  703  npm list
+
+  714  npm i pg // postgresql install in node.js project
+  715  node postgreDataFetch.js 
+  ----------------------------------------------------------------------------------------------------------
+//mongodb installation 722-732
+
+  722  sudo apt update
+  723  sudo apt upgrade
+  724  sudo apt install gnupg2
+  725  wget -nc https://www.mongodb.org/static/pgp/server-6.0.asc
+  726  cat server-6.0.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/mongodb.gpg >/dev/null
+  727  sudo sh -c 'echo "deb [ arch=amd64,arm64 signed-by=/etc/apt/keyrings/mongodb.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" >> /etc/apt/sources.list.d/mongo.list'
+  728  sudo apt update
+  729  sudo apt install mongodb-org
+  730  service mongodb start
+  731  sudo systemctl start mongod 
+  732  sudo systemctl status mongod 
+  -----------------------------------------------------------------------------------------------------------
+
+  733  mongosh
+  734  sudo nano /etc/mongod.conf
+  735  sudo systemctl restart mongod
+  736  sudo nano /etc/mongod.conf
+  737  sudo systemctl restart mongod
+  738  sudo ufw status 
+  739  sudo ufw enable
+  740  sudo ufw status 
+  741  sudo ufw allow 27017 
+  742  sudo ufw status
+  800  npm install 
+  822  docker-compose -f ./docker-compose.yml up -d cli
+  823  docker ps -a
+  824  export MSYS_NO_PATHCONV=1
+  825  starttime=$(date +%s)
+  826  docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.realmeds.io/users/Admin@org1.realmeds.io/msp" cli peer chaincode install -n realmeds -v 1.0 -p "$CC_SRC_PATH" -l "$CC_RUNTIME_LANGUAGE"
+  827  ll
+  828  cd scripts/network/
+  829  set -e
+  830  rm -rf ./hfc-key-store
+  831  cd ../../network/setup
+  832  set -ev
+  833  export MSYS_NO_PATHCONV=1
+  834  docker-compose -f docker-compose.yml down
+  835  docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb
+  836  docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/users/Admin@org1.realmeds.io/msp" peer0.org1.realmeds.io peer channel create -o orderer.realmeds.io:7050 -c channel -f /etc/hyperledger/configtx/channel.tx
+  837  docker -v
+  838  docker-compose -v
+  840  cd ~/.nvm/versions/node
+  841  ll
+  842  sudo rm -rf v18.15.0/
+  843  nvm cache clear
+  851  nvm -version
+  854  nvm uninstall 10.24.1
+  855  nvm use 8
+  856  node -v
+  868  rmdir .nvm/
+  869  rm -rf .nvm/
+  871  nvm deactivate
+  872  nvm unload
+  873  export NVM_DIR="$HOME/.nvm"
+  874  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+  875  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm
+  876  nvm deactivate
+  879  which node
+  880  sudo apt-get remove nodejs
+  881  sudo apt-get remove npm
+  882  sudo apt-get update
+  883  which node
+  884  npm -v
+  885  node -v
+  886  which node
+  887  which nvm
+  888  echo "# Installing nvm dependencies"
+  889  sudo apt-get -y install build-essential libssl-dev
+  890  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+  891  export NVM_DIR="${HOME}/.nvm"
+  892  [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+  893  [ -s "${NVM_DIR}/bash_completion" ] && . "${NVM_DIR}/bash_completion"
+  894  nvm install 10
+  895  nvm use 10
+  896  node -v
+  897  git clone https://github.com/pipra-solution/realmeds.git
+  905  cd ~/.nvm/versions/node
