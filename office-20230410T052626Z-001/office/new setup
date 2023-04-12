@@ -1,0 +1,82 @@
+   29  sudo apt-get update
+   30  gpg --refresh-keys // not working if already install pg
+   31  sudo apt-get update
+   32  sudo apt-get install -y git
+   33  sudo apt-get -y install build-essential libssl-dev
+   34  curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+   35  export NVM_DIR="${HOME}/.nvm"
+[ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+[ -s "${NVM_DIR}/bash_completion" ] && . "${NVM_DIR}/bash_completion"
+   38  nvm install 10
+   39  nvm use 10
+   40  sudo apt install docker.io
+   41  sudo usermod -a -G docker $USER
+   42  sudo apt install docker-compose
+   43  set +e
+COUNT="$(python -V 2>&1 | grep -c 2.)"
+if [ ${COUNT} -ne 1 ]; then    sudo apt-get install -y python-minimal; fi
+python3 -V
+   57  sudo apt install python2-minimal
+   58  python2 -V
+   59  sudo apt-get -y install unzip
+   60  sudo apt install golang-go
+   61  export GOPATH=$HOME/go
+   62  export PATH=$PATH:$GOPATH/bin
+   63  echo ''
+echo 'Installation completed, versions installed are:'
+echo ''
+echo -n 'Node:           '
+node --version
+echo -n 'npm:            '
+npm --version
+echo -n 'Docker:         '
+docker --version
+echo -n 'Docker Compose: '
+docker-compose --version
+echo -n 'Python:         '
+python2 -V
+   77  cd
+   93  sudo apt-get install apt-transport-https ca-certificates gnupg-agent software-properties-common
+   94  sudo usermod -aG docker $USER
+   95  id -nG
+   96  docker --version
+   97  docker run hello-world
+   98  sudo systemctl restart docker
+   99  sudo chmod 666 /var/run/docker.sock
+  100  docker run hello-world
+  101  curl -sSL http://bit.ly/2ysbOFE | bash -s -- 1.4.6 1.4.6 0.4.18
+  102  cd fabric-samples
+  104  sudo cp bin/* /usr/local/bin
+
+
+
+//////// NEW Working \\\\\\\\ Chaincode fabcar method/////////////
+
+Step 1: Query all car records (from peer0.org1)
+docker exec cli peer chaincode query -C mychannel -n fabcar -c '{"Args":["queryAllCars"]}'
+
+Step 2: Query a specific car by CarID (from peer1.org1)
+docker exec -e CORE_PEER_ADDRESS=peer1.org1.example.com:8051 -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt cli peer chaincode query -C mychannel -n fabcar -c '{"Args":["queryCar","CAR4"]}'
+
+Step 3: Add a new car (from peer0.org2).
+1. environment variables pointing to peer0.org2
+2. as endorsing policy requires two organization, we send this invoke to peer0.org1 and peer0.org2 (see peerAddresses option) plus their TLS certificates (tlsRootCertFiles option).
+docker exec -it -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp -e CORE_PEER_ADDRESS=peer0.org2.example.com:9051 -e CORE_PEER_LOCALMSPID="Org2MSP" -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt cli peer chaincode invoke -o orderer.example.com:7050 --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n fabcar --peerAddresses peer0.org1.example.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt --peerAddresses peer0.org2.example.com:9051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt -c '{"Args":["createCar", "CAR12", "Honda", "Accord", "black", "Tom"]}'
+
+Step 4: Query all cars again (from peer1.org2). We see the new car CAR12 added to the ledger.
+docker exec -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp -e CORE_PEER_ADDRESS=peer1.org2.example.com:10051 -e CORE_PEER_LOCALMSPID="Org2MSP" -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt cli peer chaincode query -C mychannel -n fabcar -c '{"Args":["queryAllCars"]}'
+
+Step 5: Change owner of CAR4 (from peer0.org1).
+docker exec cli peer chaincode invoke -o orderer.example.com:7050 --tls true --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n fabcar --peerAddresses peer0.org1.example.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt --peerAddresses peer0.org2.example.com:9051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt -c '{"Args":["changeCarOwner", "CAR4", "KC"]}'
+
+Step 6: Query CAR4 again (from peer1.org1)
+CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt cli peer chaincode query -C mychannel -n fabcar -c '{"Args":["queryCar","CAR4"]}'
+
+
+
+/////////////////////////    \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+
+
