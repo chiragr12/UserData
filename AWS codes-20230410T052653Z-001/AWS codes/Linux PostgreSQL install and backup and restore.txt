@@ -14,13 +14,13 @@
 #sudo systemctl status postgresql-13
 #sudo passwd postgres
 #su - postgres
-#psql -c "ALTER USER postgres WITH PASSWORD 'your-password';"
+#psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"     //This is very usefull line to change password
 #psql
 #\l
 #CREATE DATABASE db;
 #\l
 #\c db
-#CREATE TABLE ram(id INT PRIMARY KEY NOT NULL,name test NOT NULL);
+#CREATE TABLE ram(id INT PRIMARY KEY NOT NULL,name text NOT NULL);
 #INSERT INTO ram VALUES(11,'chi');
 #SELECT * FROM ram;
 #\q
@@ -29,3 +29,28 @@
 #mkdir folder
 #pg_dump -v -d ratyu -U postgres -p 5432 -Fc -f /var/lib/pgsql/rara/file.sql
 #pg_restore -d postgres -U postgres /var/lib/pgsql/rara/file.sql
+
+
+
+/////////// LOGGING IN POSTGRESQL \\\\\\\\\\\
+
+#sudo -i -u postgres   //this line logging postgresql
+#psql //full logging
+#\l  // list of database
+#\dt // Show all Tables
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////
+
+aws_access_key_id: 'AKIASRND23VUIOLX2OBI',
+    aws_secret_access_key: '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',
+    aws_region: 'ap-south-1',
+    aws_iot_endpoint: 'aojggxiqsh1w7-ats.iot.ap-south-1.amazonaws.com',
+    aws_firehose_scanlog_stream_name: 'demo.realmeds-scanlog',
+    aws_firehose_devicelog_stream_name: 'demo.realmeds-devicelog',
+    aws_firehose_validate_stream_name: 'demo.realmeds-validate',
+    aws_lambda_roi_fn: 'updateRoiInDynamoDB',

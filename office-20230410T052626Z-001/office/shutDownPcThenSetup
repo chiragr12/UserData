@@ -1,0 +1,9 @@
+/////////// If your syatem shut down \\\\\\\\\\\\
+#cd ~/Realmeds/realmeds/network/setup
+#docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
+#cd ../..
+#cd script/network
+#./upgrade.sh
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
