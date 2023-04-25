@@ -1,5 +1,6 @@
 #curl http://ipinfo.io/ip
-
+106.213.83.116/32
+If connection time out change our ip address in sequrity group SSH
 
 
 /////// AWS CONSOLE ACCESS \\\\\\\\\\\\\
@@ -41,4 +42,16 @@ Password : awsQAr@$l513!&
 /////////// File date change \\\\\\\\\\\\\\\\
 
 #touch -m -d 2023-04-15 fileName
+
+-----------------------------------------------------------------------------------------------------
+
+////    CRON is running or not check \\\\\\
+#grep CRON /var/log/syslog
+
+///////////////// Multiple file delete \\\\\\\\\\\\\
+
+#rm -rf backup*
+
+
+
 

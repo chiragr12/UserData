@@ -38,6 +38,8 @@
 #psql //full logging
 #\l  // list of database
 #\dt // Show all Tables
+#drop database db1
+#dropdb db1
 
 
 
