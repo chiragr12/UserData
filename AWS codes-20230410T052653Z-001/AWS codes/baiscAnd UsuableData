@@ -31,7 +31,7 @@ Password : awsQAr@$l513!&
 -name => file name ke liye extention
 "DB_Backup_name*" => file name 
 -mtime -7 => current seven day data show 
--mtime +7 => before 7 days data
+-mtime +7 => before 7 days data (aaj ke din ko chhodkar yesterday se 7 day count karta hai)
 -exec rm {} \; =>remove}
 
 
@@ -45,13 +45,16 @@ Password : awsQAr@$l513!&
 
 -----------------------------------------------------------------------------------------------------
 
-////    CRON is running or not check \\\\\\
+////  CRON is running or not check \\\\\\
+
 #grep CRON /var/log/syslog
 
 ///////////////// Multiple file delete \\\\\\\\\\\\\
 
 #rm -rf backup*
 
+
+-----------------------------------------------------------------------------------------------------------------
 
 
 

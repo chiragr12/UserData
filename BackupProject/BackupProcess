@@ -50,3 +50,33 @@ aws s3 cp /home/ubuntu/backup/database_backup_2023-04-21_10:30:01.sql s3://demob
 find /backup/ -name "database_backup.sql*" -mtime +7  -exec rm {} \;
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
+//////////// restore database \\\\\\\\\\\\\\\\\\\
+
+#!/bin/bash
+
+# Set the database name and the backup file name
+DB_NAME="db"
+BACKUP_FILE="/home/ubuntu/downloads/restore_backup.sql"
+
+# Set the username and password for the database
+DB_USERNAME="postgres"
+DB_PASSWORD="VndDhmNTum"
+
+psql --dbname=postgresql://$DB_USERNAME:$DB_PASSWORD@localhost:5432/$DB_NAME -f $BACKUP_FILE
+('psql' ka use pline text formet ke karan kiya hai otherwise 'pq_restore' ka use kiya jata hai)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------
+//////////// restore data through S3 \\\\\\\\\\\\\
+
+#!/bin/bash
+
+date=$(date '+%F_%H:%M:%S')
+aws s3 cp s3://demobackup121/backup_2023-04-24_11:36:58.sql /home/ubuntu/downloads/restoreData_${date}.sql 
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#CREATE DATABASE db;
+#DROP DATABASE db;
+(Capital latter and last mai semicolon dono important hai)
+

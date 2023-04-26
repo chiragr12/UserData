@@ -29,6 +29,8 @@
 #mkdir folder
 #pg_dump -v -d ratyu -U postgres -p 5432 -Fc -f /var/lib/pgsql/rara/file.sql
 #pg_restore -d postgres -U postgres /var/lib/pgsql/rara/file.sql
+#psql -h 127.0.0.1 -d dbName -U postgres -W -f filePath (if file is text format using psql and other situation using pg_restore)
+#DROP DATABASE realmeds; (using Capital latter and ending ; is important)
 
 
 

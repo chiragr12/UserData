@@ -3,7 +3,7 @@
 #docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
 #cd ../..
 #cd script/network
-//starting go to upgrade.sh file andd change version
+//starting go to upgrade.sh file and change version
 #./upgrade.sh
 
 
@@ -88,6 +88,10 @@ If system starting setup step by step do work
 
 
 ======================================================================================================================================================	
+
+////// Instance Stop and Start after setting \\\\\\\\\\\\\\
+
+
 
 
 
