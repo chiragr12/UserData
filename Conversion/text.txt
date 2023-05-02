@@ -18,5 +18,12 @@ As well as				saath hi,and
 Interactions				baat chit 
 Elsewhere				kahi,kisi dusre place mai
 Digress					peechhe hatna,move back
-
+Collaborative				sahyog karna,help karna
+Cascade					jharna,waterfall
+Illustrate				udaaharan dekar spasht karana
+Tampered				chhedchhaad
+Probabilistic				sambhavana
+Vulnerable				asurakchit,khatra
+Fork					kata,shul
+Deterministic				niyamatmak,nirdharanatmak
 

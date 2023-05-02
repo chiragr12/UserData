@@ -3,10 +3,6 @@
 If connection time out change our ip address in sequrity group SSH
 
 
-
-
-
-
 ////////////////////////  show latest 7 file \\\\\\\\\\\\\\\\\\\\\
 
 #ls test/ -tp | head -7
