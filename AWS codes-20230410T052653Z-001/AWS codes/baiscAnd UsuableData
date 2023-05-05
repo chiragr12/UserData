@@ -39,10 +39,13 @@ If connection time out change our ip address in sequrity group SSH
 ////  CRON is running or not check \\\\\\
 
 #grep CRON /var/log/syslog
+cron is working or not show this command using
 
 ///////////////// Multiple file delete \\\\\\\\\\\\\
 
 #rm -rf backup*
+#rm -r folderName (remove not empty folder)
+#rm fileName (remove file)
 
 
 -----------------------------------------------------------------------------------------------------------------
