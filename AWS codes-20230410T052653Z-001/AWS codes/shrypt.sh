@@ -1,5 +1,3 @@
-
-Self:-
 #!/bin/bash
 
 echo enter a first no.

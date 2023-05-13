@@ -1,16 +1,6 @@
 #curl http://ipinfo.io/ip
 
 
-
-/////// AWS CONSOLE ACCESS \\\\\\\\\\\\\
-
-
-Account ID : 174826642792
-IAM user name : dev1
-Password : awsQAr@$l513!&
-
-
-
 ////////////////////////  show latest 7 file \\\\\\\\\\\\\\\\\\\\\
 
 #ls test/ -tp | head -7
