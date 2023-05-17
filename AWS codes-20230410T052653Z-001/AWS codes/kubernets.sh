@@ -1,3 +1,4 @@
+#!/bin/bash
 ###Kubernet  
 
 sudo su
