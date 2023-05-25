@@ -1,11 +1,11 @@
 'use strict';
 
 const loopback = require('loopback');
-const ds = loopback.createDataSource('memory'); 
+const ds = loopback.createDataSource('memory'); //This two method using post method visible hard code data
 
 module.exports = function(Pipra) {
 
-    let defineDappUserFormat = function() {
+    let defineDappUserFormat = function() {  //This line se start hard code data
         let newUserModel = {
                 'dAppId' : String,
                 'userName' : String ,
@@ -17,11 +17,11 @@ module.exports = function(Pipra) {
             };
         ds.define('newDappUser', newUserModel);
       };
-      defineDappUserFormat() ;
+      defineDappUserFormat() ;  //This line tak use hard code data
 
     Pipra.addData =  function (data, cb){
         console.log("data", data);
-        cb(null, data) ;
+        cb(null, data) ; //this method is POST method
     }
 
     Pipra.getData = function(company, cb){
@@ -31,20 +31,20 @@ module.exports = function(Pipra) {
             "city":"Hyderabad",
             "company": "Pipra Solutions"
         };
-        cb(null, data);
+        cb(null, data);   //This method is GET method
     }
 
     Pipra.remoteMethod('addData', {
         accepts: [
             { arg: 'data', type: 'newDappUser', http: { source: 'body' } }
         ],
-        returns: { type: 'object', root: true }
+        returns: { type: 'object', root: true }  //POST remotemethod
     });
 
     Pipra.remoteMethod('getData', {
         accepts: [{ arg: 'company', type: 'string', required: false }],
         returns: { type: 'object', root: true },
-        http: {verb: 'get'},
+        http: {verb: 'get'},  //GET remotemethod
     });
 
 }

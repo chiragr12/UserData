@@ -147,7 +147,9 @@ cd realmeds/network/chaincode/lib/test.js file
             updatadata.name,updatadata.company,updatadata.city
         );
 
-        console.log('updateResult:','utf-8', updateResult);
+        const updateBuffer = updateResult.toString(); //Buffer data to convert String method
+        console.log('updateResult:', updateBuffer);
+        
         return updateResult
     }
 
