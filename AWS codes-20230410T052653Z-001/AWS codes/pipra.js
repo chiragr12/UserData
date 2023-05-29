@@ -19,7 +19,7 @@ module.exports = function(Pipra) {
       };
       defineDappUserFormat() ;  //This line tak use hard code data
 
-    Pipra.addData =  function (data, cb){
+    Pipra.addData =  function (data, cb){ //are you using async method then not using callback parameter(cb) 
         console.log("data", data);
         cb(null, data) ; //this method is POST method
     }
@@ -38,13 +38,14 @@ module.exports = function(Pipra) {
         accepts: [
             { arg: 'data', type: 'newDappUser', http: { source: 'body' } }
         ],
-        returns: { type: 'object', root: true }  //POST remotemethod
+        returns: { type: 'object', root: true }  //POST remote method
     });
 
     Pipra.remoteMethod('getData', {
         accepts: [{ arg: 'company', type: 'string', required: false }],
         returns: { type: 'object', root: true },
-        http: {verb: 'get'},  //GET remotemethod
+        http: {verb: 'get'},  //GET remote method
+        //verb ke aage get likhne ka use ui mai screen mai get show hoga 
     });
 
 }

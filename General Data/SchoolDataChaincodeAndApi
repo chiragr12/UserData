@@ -1,0 +1,42 @@
+{
+  "teacherId": "T06",
+  "name": "Chandresh",
+  "doj": "15/06/2019",
+  "degree": "Bsc",
+  "subject": "Math",
+  "classlist": ["class-8"]
+}
+
+{
+  "staffId": "S01",
+  "name": "Aarya",
+  "doj": "15/06/2019",
+  "degree": "12th",
+  "department": "Watchman"
+}
+
+{
+  "schoolId": "SCH01",
+  "name": "Saraswati Shishu Mandir",
+  "city": "Bhilai",
+  "headmaster": "HM-01",
+  "teachers": ["S01","S02","S03","S04","T01","T02","T03","T04","T05","T06"],
+  "address": "Scetor-4"
+}
+
+{
+  "studentId": "STH01",
+  "name": "Charu",
+  "DOB": "01/04/2023",
+  "classs": "class-6",
+  "sex": "F",
+  "address": "Bhilai"
+}
+
+{
+  "classId": "class-6",
+  "studentList": ["STH01","STH02","STH03","STH04","STH05","STH06","STH07","STH08","STH09","STH10","STH011","STH012","STH013","STH014","STH015"],
+  "subjectList": ["Math","Hindi","English","Science","Science-Social"]
+}
+
+
