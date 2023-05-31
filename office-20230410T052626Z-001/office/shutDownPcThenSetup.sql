@@ -1,10 +1,9 @@
 /////////// If your syatem shut down \\\\\\\\\\\\
-#cd ~/Realmeds/realmeds/network/setup
-#docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
-#cd ../..
-#cd script/network
-//starting go to upgrade.sh file and change version
-#./upgrade.sh
+cd ~/Realmeds/realmeds/network/setup
+docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
+cd ../../script/network
+//starting go to upgrade.sh file and change version in increment
+./upgrade.sh
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -32,17 +31,18 @@ If system starting setup step by step do work
 
   this four step done,then create two new terminal
 
-  #Realmeds-Selfcare/allInOne
-  #nodemon
+  Realmeds-Selfcare/allInOne
+  nodemon //node . (ka use bhi karke wahi kam kar sakte hai jo nodemon karta hai)
 
-  #Realmeds-Selfcare/apiserver
-  #nodemon
+  Realmeds-Selfcare/apiserver
+  nodemon
+
   //isse jo link milega use copy karke browser mai open kar lete hai
   //Issme login ke liye admin Id And Password requird hota hai
   id :-admin@realmeds.io
   pass:- re@lmeds
 
-4.#Realmeds-Selfcare/apiServer/server this terminal also come
+4.Realmeds-Selfcare/apiServer/server this terminal also come
 
 	line no. 90 uncomment and run (await realmeds.insert(dappUser))
 	#node create-couchDb-view.js
@@ -82,8 +82,8 @@ If system starting setup step by step do work
 
 #### if port no. is already exist show error use this command:-
 
-#lsof -i
-#kill -9 PS no.
+lsof -i
+kill -9 PS no.
 
 
 
@@ -91,7 +91,28 @@ If system starting setup step by step do work
 
 ////// Instance Stop and Start after setting \\\\\\\\\\\\\\
 
+1. Ec2 instance stop
+2. Ec2 instance start
+3. docker ps (not show any Container)
+4. cd realmeds/network/setup/
+5. docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
+6. cd ../../script/network/
+7. vi upgrade.sh (version increment and save file)
+8. ./upgrade.sh
+9. cd ../../network/api/
+10. forever start server/server.js
+11. cd ~/realmeds-selfcare/apiserver/
+12. forever start server/server.js
+13. cd ../microsite/
+14. forever start dist/microsite/server/main.js
+15. forever logs (Check all logs)
+16. ip:3001 browser working or not 
+17. df -h
+18. sudo mount volume path directory path
 
+Work is final done
+
+======================================================================================================================================================
 
 
 
