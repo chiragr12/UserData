@@ -113,7 +113,10 @@ kill -9 PS no.
 Work is final done
 
 ======================================================================================================================================================
-
+Docker logs check in chaincode:-
+docker ps (show all running Container First container is latest version chaincode and copy container id)
+docker logs -f <container id>
+and show logs
 
 
 

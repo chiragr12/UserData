@@ -328,48 +328,23 @@ module.exports = function(Schoolmanagement) {
   "bookmark": ""
 } //if not give any pageSize byDefault using no. of 5 using
 
-{
-   "selector": {
-      "$and": [
-         {
-            "docType": "student"
-         },
-         {
-            "sex": "F"
-         },
-         {
-            "classs": "class-6"
-         }
-      ]
-   }
-}
-
-{
-    "selector": {
-         "docType": "student",
-         "sex": "F",
-         "classs": "class-6"
-    }
-}
-
-
+//localhost:3000/explorer/
+run and update method
 {
   "pageSize": "2",
   "bookmark": "g1AAAAA6eJzLYWBgYMpgSmHgKy5JLCrJTq2MT8lPzkzJBYqzBod4GBiBJDlgkgjhLAC_9g9h"
 }
-
-
 ------------------------------------------------------------------------------------------------------------------------------
 
    Schoolmanagement.remoteMethod('getStudentDataWithPagination',{
         accepts: [
-            {arg: 'data',type: 'object'}
+            {arg: 'data',type: 'object'} //body also remove
         ],
         returns: {type: 'object', root: true},
         http: {verb: 'get'},
         // If you are using get method then body is not run
     });
-{ "pageSize": "3" , "bookmark": "g1AAAAA6eJzLYWBgYMpgSmHgKy5JLCrJTq2MT8lPzkzJBYqzBod4GBiDJDlgkgjhLADAEQ9j" }  //get method is also working . code remove body{}
+{ "pageSize": "3" , "bookmark": "g1AAAAA6eJzLYWBgYMpgSmHgKy5JLCrJTq2MT8lPzkzJBYqzBod4GBiDJDlgkgjhLADAEQ9j" }  //get method is also working .
 
 ****************************************************************************************************************************************************************
 =================================================================================================================================================================
@@ -390,10 +365,10 @@ async addHeadmaster(ctx,id,name,doj,degree){
             console.log("Headmaster Id should be there");
             console.log("==============================================");
             throw "Headmaster Id must not be empty";
-        }
+        } //This method check id is not empty if id empty then show throw data
 
         try {
-            await state.keyMustNotExist(ctx, id);
+            await state.keyMustNotExist(ctx, id);  //THis line using Id not Exist then create Id 
         
         } catch (error) {
             console.log(id)
@@ -885,6 +860,7 @@ module.exports = function(Schoolmanagement) {
           datah.degree  
         );
         result = JSON.parse(result.toString()) ;
+        //This above line is very important because this line not use responce data show base64 this is not understaning, so converted 
         return result;
     }
 

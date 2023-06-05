@@ -65,6 +65,15 @@
       ]
    }
 }
+--------------------------------------------------------------------------------------------------
+#direct use above query and this query show same results:-
+{
+    "selector": {
+         "docType": "student",
+         "sex": "F",
+         "classs": "class-6"
+    }
+}
 ----------------------------------------------------------------------------------------------
 DOCS:-
 1. $in :- The document field must exist in the list provided.

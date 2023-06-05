@@ -63,3 +63,10 @@ docker-compose -f ./docker-compose.yml up -d cli
 docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.realmeds.io/users/Admin@org1.realmeds.io/msp" cli peer chaincode install -n realmeds -v 1.0 -p "$CC_SRC_PATH" -l "$CC_RUNTIME_LANGUAGE"
 
 docker exec -e "CORE_PEER_LOCALMSPID=Org1MSP" -e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.realmeds.io/users/Admin@org1.realmeds.io/msp" cli peer chaincode install -n basic -v 1.0 -p /opt/gopath/src/github.com/ -l node
+
+
+================================================================================================================================================================
+Docker logs check in chaincode:-
+docker ps (show all running Container First container is latest version chaincode and copy container id)
+docker logs -f <container id>
+and show logs
