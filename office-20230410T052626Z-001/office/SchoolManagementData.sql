@@ -1183,4 +1183,450 @@ const Schoolmanagement = require('./schoolManagement')
         return response;
     }
 
+    //update user data 
+//chaincode ke under file hota hai
 
+      async updateTeacherData(ctx,teacherId,children){
+        try{
+            children = JSON.parse(children);
+    
+            if(teacherId.length === 0 ){
+                throw "TeacherId must not be empty";
+            } 
+            try{
+               var teacherUserData = await state.keyMustExist(ctx,teacherId);
+
+            }catch(error){
+                throw 'invalid TeacherId ' +teacherId;
+            }
+
+            // if(teacherUserData.name && teacherUserData.name.length === 0 ){
+            //     throw "Name must not be empty";
+            // }
+
+            // if(teacherUserData.doj && teacherUserData.doj.length === 0 ){
+            //     throw "Date of Joining must not be empty";
+            // }
+
+            // if(teacherUserData.degree && teacherUserData.degree.length === 0 ){
+            //     throw "Degree must not be empty";
+            // }
+
+            // if(teacherUserData.subject && teacherUserData.subject.length === 0 ){
+            //     throw "Subject must not be empty";
+            // }
+
+            // if(teacherUserData.classlist && teacherUserData.classlist.length === 0 ){
+            //     throw "ClassList must not be empty";
+            // }//This method is not using also proper working
+
+            if(children.name){
+                teacherUserData.name = children.name;
+            }
+
+            if(children.doj){
+                teacherUserData.doj = children.doj;
+            }
+
+            if(children.degree){
+                teacherUserData.degree = children.degree;
+            }
+
+            if(children.subject){
+                teacherUserData.subject = children.subject;
+            }
+
+            if(children.classlist){
+                teacherUserData.classlist = children.classlist;
+            }
+
+            await ctx.stub.putState(teacherId, Buffer.from(JSON.stringify(teacherUserData)));
+
+            return{
+                status : true,
+                data :  teacherId +" updated successfully"
+            }
+
+        }catch(error){
+            return{
+                status: false,
+                data: error
+            }
+        }
+    }
+
+//realmeds.js file
+
+  async updateTeachersData(ctx,teacherId,children) {
+        return await teachers.updateTeacherData(ctx,teacherId,children)
+    }
+
+//Api teacher.js file    
+
+    Teacher.updateTeacherData = async function(data){
+        try{
+        const contract = await chaincode.validateUser('user3')
+        
+        var teachersId = data.teacherId;
+        data = escapeJson(JSON.stringify(data));
+
+        var responce = await contract.submitTransaction(
+            'updateTeachersData',
+            teachersId,
+            data
+        );
+
+        return JSON.parse(responce.toString());
+
+        -- if(responce.status){
+        --     return responce.data;
+        -- }else{
+        --     throw new Error(responce.data)
+        -- }
+    }catch(error){
+        throw error;
+    }
+    }
+
+    Teacher.remoteMethod('updateTeacherData', {
+        accepts: [
+            { arg: 'data', type: 'teacher', http: { source: 'body' } }
+        ],
+        returns: { type: 'object', root: true },
+        http: {verb: 'put'}
+    });
+
+
+    =========================================================================================================================================================
+    //some update details like you direct search in techer and syudent field to specific school data
+
+    chaincode/lib/Studentmanagement/techer.js
+
+    const state = require('../utils/state');
+module.exports = {
+
+    async addTeachers(ctx,teacherId,name,doj,degree,subject,classlist,schoolId){
+        try{
+    
+            classlist = JSON.parse(classlist); //because classlist is obj
+    
+            if(teacherId.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher TeacherId should be there");
+                console.log("==============================================");
+                throw "Teacher TeacherId must not be empty";
+            }        
+    
+            try {
+                await state.keyMustNotExist(ctx, teacherId);
+            
+            } catch (error) {
+                console.log(teacherId)
+                throw teacherId + " Teacher is already registered"
+            }
+    
+            if(name.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher Name should be there");
+                console.log("==============================================");
+                throw "Teacher Name must not be empty";
+            }
+    
+            if(doj.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher Joining date should be there");
+                console.log("==============================================");
+                throw "Teacher Joining date should be there";
+            }
+    
+            if(degree.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher degree should be there");
+                console.log("==============================================");
+                throw "Teacher Degree must not be empty";
+            }
+    
+            if(subject.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher name should be there");
+                console.log("==============================================");
+                throw "Teacher Subject must not be empty";
+            }
+    
+            if(classlist.length === 0 ){
+                console.log(".....................................................................................");
+                console.log("Teacher classlist should be there");
+                console.log("==============================================");
+                throw "Teacher Classlist must not be empty";
+            }
+
+            if(schoolId.length ===0){
+                throw "Teacher inside schoolId not empty"
+            }
+    
+            const addTeacher = {
+                teacherId,
+                name,
+                doj,
+                degree,
+                subject,
+                classlist,
+                schoolId,
+                docType: "teacher"
+            }
+            await ctx.stub.putState(teacherId,Buffer.from(JSON.stringify(addTeacher)));
+            return {
+                status: true,
+                data: teacherId + " Teacher added Successfully"
+            }
+    }catch(error){
+        console.log(error);
+        return{
+            status: false,
+            data: error
+        }
+    }
+    },
+
+    async updateTeacherData(ctx,teacherId,children){
+        try{
+            children = JSON.parse(children);
+    
+            if(teacherId.length === 0 ){
+                throw "TeacherId must not be empty";
+            } 
+            try{
+               var teacherUserData = await state.keyMustExist(ctx,teacherId);
+
+            }catch(error){
+                throw 'invalid TeacherId ' +teacherId;
+            }
+
+            // if(teacherUserData.name && teacherUserData.name.length === 0 ){
+            //     throw "Name must not be empty";
+            // }
+
+            // if(teacherUserData.doj && teacherUserData.doj.length === 0 ){
+            //     throw "Date of Joining must not be empty";
+            // }
+
+            // if(teacherUserData.degree && teacherUserData.degree.length === 0 ){
+            //     throw "Degree must not be empty";
+            // }
+
+            // if(teacherUserData.subject && teacherUserData.subject.length === 0 ){
+            //     throw "Subject must not be empty";
+            // }
+
+            // if(teacherUserData.classlist && teacherUserData.classlist.length === 0 ){
+            //     throw "ClassList must not be empty";
+            // }//This method is not using also proper working
+
+            if(children.name){
+                teacherUserData.name = children.name;
+            }
+
+            if(children.doj){
+                teacherUserData.doj = children.doj;
+            }
+
+            if(children.degree){
+                teacherUserData.degree = children.degree;
+            }
+
+            if(children.subject){
+                teacherUserData.subject = children.subject;
+            }
+
+            if(children.classlist){
+                teacherUserData.classlist = children.classlist;
+            }
+
+            if(children.schoolId){
+                teacherUserData.schoolId = children.schoolId;
+            }
+
+            await ctx.stub.putState(teacherId, Buffer.from(JSON.stringify(teacherUserData)));
+
+            return{
+                status : true,
+                data :  teacherId +" updated successfully"
+            }
+
+        }catch(error){
+            return{
+                status: false,
+                data: error
+            }
+        }
+    }
+
+    // async updateTeacherData(ctx,teacherId,name,doj,degree,subject,classlist){
+    //     try{
+
+    //         if(teacherId.length === 0 ){
+    //             throw "Teacher TeacherId must not be empty";
+    //         } 
+    //         try{
+    //             await state.keyMustExist(ctx,teacherId);
+
+    //         }catch(error){
+    //             throw 'invalid userId ' +teacherId;
+    //         }
+    //         classlist = JSON.parse(classlist);
+
+    //         if(name.length === 0 ){
+    //             throw "Teacher Name must not be empty";
+    //         }
+    
+    //         if(doj.length === 0 ){
+    //             throw "Teacher Joining date should be there";
+    //         }
+    
+    //         if(degree.length === 0 ){
+    //             throw "Teacher Degree must not be empty";
+    //         }
+    
+    //         if(subject.length === 0 ){
+    //             throw "Teacher Subject must not be empty";
+    //         }
+    
+    //         if(classlist.length === 0 ){
+    //             throw "Teacher Classlist must not be empty";
+    //         }
+    //         const userDetails = {
+    //             name,
+    //             doj,
+    //             degree,
+    //             subject,
+    //             classlist,
+    //             docType : "teacher"
+    //         }
+    //         await ctx.stub.putState(teacherId,Buffer.from(JSON.stringify(userDetails)));
+    //         return {
+    //             status: true,
+    //             data: teacherId + " id updated Successfully"
+    //         }
+    // }catch(error){
+    //     return {
+    //         status: false,
+    //         data: error
+    //     }
+    // }//This method using all data updated one single time.
+    // }
+}
+
+chaincode/lib/realmeds.js
+
+ async addTeachers(ctx,teacherId,name,doj,degree,subject,classlist,schoolId){
+        let response = await teacher.addTeachers(ctx,teacherId,name,doj,degree,subject,classlist,schoolId);
+        return response
+    }
+  async updateTeachersData(ctx,teacherId,children) {
+        return await teachers.updateTeacherData(ctx,teacherId,children)
+    }
+
+
+api/comman/model/teacher.js
+
+'use strict';
+
+const escapeJson = require('escape-json-node/lib/escape-json'); 
+const chaincode = require('../../lib/validate-user');
+const loopback = require('loopback');
+const ds = loopback.createDataSource('memory'); 
+
+module.exports = function(Teacher) {
+
+    let defineTeacherFormat = function(){
+        let headTeacherModel = {
+            'teacherId' : String,
+            'name' : String,
+            'doj' : String,
+            'degree' : String,
+            'subject' : String,
+            'classlist' : String,  //Array to String convert because you are not convert your data is not visible
+            'schoolId' : String
+        };
+        ds.define('teacher',headTeacherModel);
+    };
+    defineTeacherFormat();
+
+    Teacher.addTeacherData = async function(data){
+        const contract = await chaincode.validateUser('user3')
+        let result = await contract.submitTransaction(
+            'addTeachers',
+            data.teacherId,
+            data.name,
+            data.doj,
+            data.degree,
+            data.subject,
+            escapeJson(JSON.stringify(data.classlist)),
+            data.schoolId
+        );
+        return JSON.parse(result.toString()) ;
+    }
+
+    Teacher.getTeacherData = async function(teacherId){
+        const contract = await chaincode.validateUser('user3')
+
+        var teacherResult = await contract.evaluateTransaction('queryState',teacherId);
+       return JSON.parse(teacherResult.toString());
+    }
+
+    // Teacher.updateTeacherDatas = async function(updateData){
+    //     const contract = await chaincode.validateUser('user3')
+    //     let updateResult = await contract.submitTransaction(
+    //         'updateTeacherData',
+    //         updateData.teacherId,
+    //         updateData.name,
+    //         updateData.doj,
+    //         updateData.degree,
+    //         updateData.subject,
+    //         escapeJson(JSON.stringify(updateData.classlist))
+    //     );
+    //     return JSON.parse(updateResult.toString());
+    // }//This method using all data updated one single time.
+
+    Teacher.updateTeacherData = async function(data){
+        try{
+        const contract = await chaincode.validateUser('user3')
+        
+        var teachersId = data.teacherId;
+        data = escapeJson(JSON.stringify(data));
+
+        var responce = await contract.submitTransaction(
+            'updateTeachersData',
+            teachersId,
+            data
+        );
+
+        return JSON.parse(responce.toString());
+    }catch(error){
+        throw error;
+    }
+    }
+
+    Teacher.remoteMethod('updateTeacherData', {
+        accepts: [
+            { arg: 'data', type: 'teacher', http: { source: 'body' } }
+        ],
+        returns: { type: 'object', root: true },
+        http: {verb: 'put'}
+    });
+
+    Teacher.remoteMethod('getTeacherData',{
+        accepts: [{arg: 'teacherId',type: 'string'}],
+        returns: {type: 'object', root: true},
+        http: {verb: 'get'},
+    });
+
+    Teacher.remoteMethod('addTeacherData', {
+        accepts: [
+            { arg: 'data', type: 'teacher', http: { source: 'body' } }
+        ],
+        returns: { type: 'teacher', root: true }
+    });
+};
+
+===========================================================================================================================================================   

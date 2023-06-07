@@ -4,6 +4,7 @@ docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io pe
 cd ../../script/network
 //starting go to upgrade.sh file and change version in increment
 ./upgrade.sh
+///if you are not update your chaincode version and not run script and direct run nodemon you are show only latest version of chaincode not show aal version chaincode.
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
