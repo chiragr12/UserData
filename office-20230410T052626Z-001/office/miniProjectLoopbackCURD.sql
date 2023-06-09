@@ -833,3 +833,420 @@ module.exports = function(Pproduct) {
     });
 };
 =======================================================================================================================================================
+chaincode/lib/practice
+pbatch.js
+
+const state =  require('../../lib/utils/state');
+var moment = require('moment');
+console.log(state);
+module.exports = {
+
+    async addBatch(ctx,batchId,gtin,serialNumStartIdx,mfgDate,expiryDate,quantity){
+        try{
+
+        if(batchId.length === 0){
+            throw "Batch Id must not be empty";
+        }
+
+        try{
+            await state.keyMustNotExist(ctx,batchId);
+        }catch(error){
+            throw batchId + " already registered";
+        }
+
+        quantity = parseInt(quantity);
+        serialNumStartIdx = parseInt(serialNumStartIdx);
+        
+        if(quantity <= 0){
+            throw "Invalid batch quantity : " + quantity;
+        }
+
+        if(serialNumStartIdx < 0){
+            throw "Invalid starting serial number : " + serialNumStartIdx;
+        }
+
+        if(mfgDate.length != 0){
+            mfgDate = new Date(mfgDate);
+        }else{
+            mfgDate = new Date();
+        }
+
+        if(expiryDate.length != 0){
+            expiryDate = new Date(expiryDate);
+
+            if(expiryDate < mfgDate){
+                throw "Invalid expiry date : " + expiryDate;
+            }
+        }
+
+        if(gtin.length === 0){
+            throw "gtin must not be empty";
+        }
+
+        try{
+            var product = await state.keyMustExist(ctx,gtin)
+            }catch(error){
+                throw gtin + " gtin is invalid"
+            }
+
+        // var units = product.attributes.units;//throw error 
+        console.log("data is : " +product)
+        try{
+            await state.keyMustExist(ctx,product.gln);
+        }catch(error){
+            throw "Location " + product.gln + " is not found";
+        }
+
+        try{
+            await state.keyMustExist(ctx,product.gcp);
+        }catch(error){
+            throw "GCP " + product.gcp + " is not found";
+        }
+
+        var productInstanceIdToken = batchId;
+        var firstIndex = 0;
+        var lastIndex = quantity;
+
+        if(serialNumStartIdx != ''){
+            firstIndex = serialNumStartIdx;
+            lastIndex = serialNumStartIdx + quantity;
+        }
+
+        for(index = firstIndex; index < lastIndex; index++){
+            var productInstanceId = productInstanceIdToken + "-" + index;
+
+            const productInstance = {
+                docType: "primary",
+                batchId,
+                isInvalid: false,
+                gtin: gtin
+            }
+            await ctx.stub.putState(productInstanceId,Buffer.from(JSON.stringify(productInstance)));  
+        }
+
+        var batch = {
+            docType: "pbatch",
+            batchId,
+            gtin,
+            mfgDate: moment.utc(mfgDate).format(),
+            expiryDate: moment.utc(expiryDate).format(),
+            quantity,
+            isRecalled: false,
+            gcp: product.gcp,
+            gln: product.gln
+
+        }
+
+        await ctx.stub.putState(batchId,Buffer.from(JSON.stringify(batch)));
+        batch['status'] = true;
+
+
+        return{
+            status: true,
+            batchId: batchId,
+            gtin,
+            mfgDate: moment.utc(mfgDate).format(),
+            expiryDate: moment.utc(expiryDate).format(),
+            gcp: product.gcp,
+            gln: product.gln
+        }
+    }catch(error){
+        return{
+            status: false,
+            data: error
+        }
+    }
+    },
+
+    async updateBatchData(ctx,batchId,children){
+        try{
+            children = JSON.parse(children);
+            try{
+                var batchData = await state.keyMustExist(ctx,batchId);
+            }catch(error){
+                throw batchId + " not found"
+            }
+
+            if(children.serialNumStartIdx){
+                batchData.serialNumStartIdx = children.serialNumStartIdx;
+            }
+
+            if(children.mfgDate){
+                batchData.mfgDate = children.mfgDate;
+            }
+
+            if(children.expiryDate){
+                batchData.expiryDate = children.expiryDate;
+            }
+
+           await ctx.stub.putState(batchId,Buffer.from(JSON.stringify(batchData)));
+           
+           return{
+            status : true,
+            data: "Batch " + batchId + " Updated Successfully"
+           }
+
+        }catch(error){
+            return{
+                status: false,
+                data: error
+            }
+        }
+    },
+
+    async deleteBatchData(ctx, batchId){
+        try {
+            
+            var queryString = {};
+            queryString.selector = {};
+            queryString.selector.batchId = batchId;
+
+            var totalKeyCntIterator = await state.query(ctx, queryString);
+            var keys = await state.keyCount(totalKeyCntIterator);
+            keys = JSON.parse(keys);
+            if(keys.length === 0){
+                throw  "Batch: "+ batchId + " not found";  
+            }
+
+            var filterKeyList = []; 
+            for (let index = 0; index < keys.length; index++) {
+                const element = keys[index];
+                filterKeyList.push(element.Key);
+            }
+
+            var queryString = {};
+            queryString.selector = {};
+
+            queryString.selector = { 
+                batchId: {
+                    "$in": filterKeyList
+                }
+            };
+
+            var iterator = await state.query(ctx, queryString);
+            
+            let keyList = await state.getAllResultsOfPagination(iterator);
+
+            try {
+                for (let index = 0; index < keyList.length; index++) {
+                    const key = keyList[index];
+                    await ctx.stub.deleteState(key);  
+                }
+            }catch (error) {
+                throw error
+            }
+
+            try {
+                for (let index = 0; index < filterKeyList.length; index++) {
+                    const key = filterKeyList[index];
+                await ctx.stub.deleteState(key);
+                    
+                }
+            } catch (error) {
+                throw error
+            }
+
+            await ctx.stub.deleteState(batchId);
+
+            return {
+                status:true,
+                data: "Batch linked with batchId: " + batchId + " deleted successfully"
+            }
+
+        } catch(error) {
+            return{
+                status : false,
+                data : error
+            }
+        }  //Proper working
+    }
+
+    // async cancelBatchData(ctx,batchId){
+    //     try{
+    //         try{
+    //             var batchData = await state.keyMustExist(ctx,batchId);
+    //         }catch(error){
+    //             throw batchId + " not found"
+    //         };
+
+    //         batchData.cancelled = true;
+    //         await ctx.stub.putState(batchId,Buffer.from(JSON.stringify(batchData)));
+
+    //         return{
+    //             status: true,
+    //             data: "Batch "+ batchId + " cancelled Successfully"
+    //         }
+    //     }catch(error){
+    //         return{
+    //             status: false,
+    //             data: error
+    //         }
+    //     }
+    // }
+}
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+realmeds.js 
+
+async addBatchData(ctx,batchId,gtin,serialNumStartIdx,mfgDate,expiryDate,quantity){
+        return await pbatch.addBatch(ctx,batchId,gtin,serialNumStartIdx,mfgDate,expiryDate,quantity);
+    }
+
+    async updateBatchDatas(ctx,batchId,children){
+        return await pbatch.updateBatchData(ctx,batchId,children)
+    }
+
+    // async cancelBatchDatas(ctx,batchId){
+    //     return await pbatch.cancelBatchData(ctx,batchId)
+    // }
+
+    async deleteBatchDatas(ctx, batchId){
+        return await pbatch.deleteBatchData(ctx, batchId);
+    }
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+api/comman/model/
+pbatch.js 
+
+'use strict';
+
+const loopback = require('loopback');
+const ds = loopback.createDataSource('memory');
+const chaincode = require('../../lib/validate-user');
+const escapeJson = require('escape-json-node/lib/escape-json');
+
+module.exports = function(Pbatch) {
+
+    let defineBatchFormat = function(){
+        let batchFormat = {
+            'batchId': String,
+            'gtin': String,
+            'serialNumStartIdx': String,
+            'mfgDate': String,
+            'expiryDate': String,
+            'quantity': String
+        };
+        ds.define('batch',batchFormat);
+    };
+    defineBatchFormat();
+
+    let defineBatchUpdateFormat = function(){
+        let batchUpdateFormat = {
+            'batchId': String,
+            'serialNumStartIdx': String,
+            'mfgDate': String,
+            'expiryDate': String
+        };
+        ds.define('batcha',batchUpdateFormat);
+    };
+    defineBatchUpdateFormat();
+
+Pbatch.addBatchdata = async function (data){
+    try{
+        const contract = await chaincode.validateUser('user3');
+        var result = await contract.submitTransaction(
+            'addBatchData',
+            data.batchId,
+            data.gtin,
+            data.serialNumStartIdx,
+            data.mfgDate,
+            data.expiryDate,
+            data.quantity
+        );
+        console.log(JSON.parse(result.toString()));
+        return JSON.parse(result.toString());
+    }catch(error){
+        throw error
+    }
+}
+
+Pbatch.getBatchdata = async function(batchId){
+    const contract = await chaincode.validateUser('user3')
+    var result = await contract.evaluateTransaction('queryState',batchId)
+    return JSON.parse(result.toString());
+}
+
+Pbatch.updateBatchdata = async function(data){
+    try{
+        const contract = await chaincode.validateUser('user3')
+        var batchIds = data.batchId;
+        data = escapeJson(JSON.stringify(data))
+        var responce = await contract.submitTransaction(
+            'updateBatchDatas',
+            batchIds,
+            data
+        ); //This method working but primary data are not changes 
+        //Beacuse not use this method
+        return JSON.parse(responce.toString());
+
+    }catch(error){
+          throw error;  
+    }
+}
+
+Pbatch.deleteBatchData = async function(batchId){
+    try{
+        const contract = await chaincode.validateUser('user3')
+        var result = await contract.submitTransaction(
+            'deleteBatchDatas',
+            batchId
+        );
+        return JSON.parse(result.toString());
+
+    }catch(error){
+        throw error;
+    }
+}
+
+Pbatch.remoteMethod('deleteBatchData',{
+    accepts: [
+        {arg: 'batchId', type: 'string'}
+    ],
+    returns: {type: 'object', root: true},
+    http: {verb: 'delete'},
+});
+
+// Pbatch.cancel =  async function (batchId){
+
+//     try {
+//         const contract = await chaincode.validateUser('user3');
+//         var result = await contract.submitTransaction(
+//             'cancelBatchDatas', 
+//             batchId);
+//         result = JSON.parse(result.toString());
+//     } catch (error) {
+//         throw error
+//     }
+// }
+
+// Pbatch.remoteMethod('cancel', {
+//     accepts: [
+//         { arg: 'batchId', type: 'string', required: true }
+//     ],
+//     returns: { type: 'object', root: true }
+// });
+
+Pbatch.remoteMethod('addBatchdata',{
+    accepts: [
+        {arg: 'data', type: 'batch', http: {source: 'body'}}
+    ],
+    returns: {type: 'object', root: true}
+});
+
+Pbatch.remoteMethod('updateBatchdata', {
+    accepts: [
+        { arg: 'data', type: 'batcha', http: { source: 'body' } }
+    ],
+    returns: { type: 'object', root: true },
+    http: {verb: 'put'}
+});
+
+Pbatch.remoteMethod('getBatchdata',{
+    accepts: [{arg: 'batchId',type: 'string'}],
+    returns: {type: 'object', root: true},
+    http: {verb: 'get'},
+});
+};
+
+==================================================================================================================================================================    
