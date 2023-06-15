@@ -1,6 +1,7 @@
 /////////// If your syatem shut down \\\\\\\\\\\\
 cd ~/Realmeds/realmeds/network/setup
 docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
+//below method not always time apply if not working then apply below method.
 cd ../../script/network
 //starting go to upgrade.sh file and change version in increment
 ./upgrade.sh
@@ -13,34 +14,36 @@ cd ../../script/network
 
 If system starting setup step by step do work
 
-1.#realmeds cd script/network 
-  #./stopFabric.sh
-  #docker volume ls
-  #docker volume prune
-  #startFabric.sh
+1.realmeds cd script/network 
+  ./stopFabric.sh
+  docker volume ls
+  docker volume prune
+  startFabric.sh
 
 
-2.#realmeds/network/api
-  #nodemon
+2.realmeds/network/api
+  nodemon or node .
 
 3.Realmeds-Selfcare
-  #realmeds-Selfcare/apiserver/server
-  #node create-table.js
-  #node create-state.js
-  #node create-csc.js
-  #node create-users.js
+  cd ~/realmeds-Selfcare/apiserver/server
+  node create-table.js
+  node create-state.js
+  node create-csc.js
+  node create-users.js
 
   this four step done,then create two new terminal
 
   Realmeds-Selfcare/allInOne
-  nodemon //node . (ka use bhi karke wahi kam kar sakte hai jo nodemon karta hai)
+  -- nodemon //node . (ka use bhi karke wahi kam kar sakte hai jo nodemon karta hai)
+  ng serve (This command is running port 4200 if you are running in ec2 ins. then using ng-build)
+  (Local mai port 4200 ka use kiya jata hai isi mai login kiya jata hai)
 
   Realmeds-Selfcare/apiserver
-  nodemon
+  nodemon   or node .
 
   //isse jo link milega use copy karke browser mai open kar lete hai
-  //Issme login ke liye admin Id And Password requird hota hai
-  id :-admin@realmeds.io
+  //Issme login ke liye admin Id And Password requird hota hai (port 3100 ka use Ec2 mai kiya jata hai)
+  id :-admin@realmeds.io 
   pass:- re@lmeds
 
 4.Realmeds-Selfcare/apiServer/server this terminal also come
@@ -78,6 +81,7 @@ If system starting setup step by step do work
 	target country,batch quantity and other datils fill 
 	and go Manage Batch and seen your Batch details
 
+//Sare 89,90,91,92 and 93 uncomment karke direct run bhi posible hai no any issue
 
 // This is complete setup starting thoda confusion but after time very easy
 

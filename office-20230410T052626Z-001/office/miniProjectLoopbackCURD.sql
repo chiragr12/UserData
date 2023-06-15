@@ -1250,3 +1250,249 @@ Pbatch.remoteMethod('getBatchdata',{
 };
 
 ==================================================================================================================================================================    
+api/comman/model/pbatch.js
+
+create label method to modify add data
+
+'use strict';
+
+const loopback = require('loopback');
+const ds = loopback.createDataSource('memory');
+const chaincode = require('../../lib/validate-user');
+const sampledatamatrix = require('../../label/types/sampledatamatrix');
+const path = require('path')
+const Excel = require('exceljs')
+var app = require("../../server/server");
+const uniqid = require("uniqid");
+var ejs = require("ejs");
+const config = require('../../server/config.json')
+const ccpPath = path.resolve(__dirname, '../../client/labels')
+
+
+module.exports = function(Pbatch) {
+
+    let defineBatchFormat = function(){
+        let batchFormat = {
+            'batchId': String,
+            'gtin': String,
+            'serialNumStartIdx': String,
+            'mfgDate': String,
+            'expiryDate': String,
+            // 'gs1ApplicationIdentifiers': Object,
+            'quantity': String
+        };
+        ds.define('batch',batchFormat);
+    };
+    defineBatchFormat();
+
+    // let defineBatchUpdateFormat = function(){
+    //     let batchUpdateFormat = {
+    //         'batchId': String,
+    //         'serialNumStartIdx': String,
+    //         'mfgDate': String,
+    //         'expiryDate': String
+    //     };
+    //     ds.define('batcha',batchUpdateFormat);
+    // };
+    // defineBatchUpdateFormat();
+
+Pbatch.addBatchdata = async function (data){
+    try{
+        const contract = await chaincode.validateUser('user3');
+
+        var reqData = {
+            "gtin": data.gtin,
+            "batchId": data.batchId
+        };
+
+        // if (data.gs1ApplicationIdentifiers === undefined || data.gs1ApplicationIdentifiers.length === 0) {
+        //     data.gs1ApplicationIdentifiers = ["gtin", "batchId", "serialNo", "mfgDate", "expiryDate"]
+        // }
+
+        // data.gs1ApplicationIdentifiers = escapeJson(JSON.stringify(data.gs1ApplicationIdentifiers));
+
+
+        var result = await contract.submitTransaction(
+            'addBatchData',
+            data.batchId,
+            data.gtin,
+            data.serialNumStartIdx,
+            data.mfgDate,
+            data.expiryDate,
+            // data.gs1ApplicationIdentifiers,
+            data.quantity
+        );
+        // console.log(JSON.parse(result.toString()));
+        result = JSON.parse(result.toString());
+        //some changes
+
+        data.quantity = parseInt(data.quantity);
+        data.serialNumStartIdx = parseInt(data.serialNumStartIdx);
+
+        if(result.status){
+            var serializationType = "instanceLevel";
+            var reqLabels = "dataMatrix";
+            var label = [];
+            var productInstanceIdToken = data.batchId;
+            var firstIndex = 0;
+            var lastIndex = data.quantity;
+
+            if(data.serialNumStartIdx != ''){
+                firstIndex = data.serialNumStartIdx;
+                lastIndex = data.serialNumStartIdx + data.quantity;
+            }
+
+            console.log('firstIndex: ', firstIndex);
+            console.log('lastIndex: ', lastIndex);
+
+            for(var index = firstIndex; index < lastIndex; index++){
+                var productInstanceId = productInstanceIdToken + "-" + index;
+
+                reqData["serialNo"] = productInstanceId;
+
+                // var labelInfo = await app.models.Label.create(
+                //     serializationType,
+                //     // data.gs1ApplicationIdentifiers,
+                //     reqData,
+                //     reqLabels
+                // );
+
+                let testData = `(01)${reqData['gtin']}
+                (10)"${reqData['batchId']}(21)$${reqData['serialNo']}`;
+                var labelInfo = await sampledatamatrix.getLabel(testData);
+
+                console.log("data label info check "+labelInfo)
+
+                label.push({
+                    // hri: labelInfo.hri,
+                    code: labelInfo
+                });
+
+                console.log('loop count: ', index);
+            }
+
+            result.label = label;
+
+            var product = await contract.evaluateTransaction(
+                'queryState',
+                result.gtin);
+                product = JSON.parse(product.toString());
+
+                const workbook = new Excel.Workbook();
+                const worksheet = workbook.addWorksheet("My Sheet");
+
+                worksheet.columns = [
+                    {header: 'Id', key: 'id', width: 5},
+                    // {header: 'HRI', key: 'hri', width: 100},
+                    {header: 'Label', key: 'label', width: 1000}
+                ];
+
+                for(let index = 0; index < result.label.length; index++){
+                    const lbl = result.label[index].code;
+                    // const hri = result.label[index].hri;
+                    
+                    worksheet.addRow({id: index,
+                        //  hri: hri,
+                         label: lbl});
+                }
+
+                var fileName = result.gcp + "-" + uniqid();
+
+
+                await workbook.xlsx.writeFile(ccpPath + `/${fileName}.xlsx`);
+
+                var downloadUrl = config.externalUrl + '/labels' + `${fileName}.xlsx`;
+
+                var html = await ejs.renderFile(
+                    path.resolve(__dirname, "../../server/views/mail-label.ejs"),
+                    {
+                        downloadLink: downloadUrl,
+                        batchNo: result.batchId,
+                        externalUrl: config.externalUrl,
+                        supportUserName: config.supportUserName
+                    },
+                    {
+                        async: true
+
+                    }
+                );//This line data proper work
+
+                app.models.Email.send(
+                    {
+                        to: [result.organisationEmail, result.locationEmail],
+                        from: config.senderEmailAddress,
+                        subject: 'Batch labels - ' + result.batchId,
+                        html: html
+                    },
+                    function(err){
+                        if(err){
+                            return console.log("> error sending label rmail")
+                        }
+                    }
+                ); //This mail not work show error
+
+                result.labelDownloadLink = downloadUrl,
+
+                delete result.organisationEmail;
+                delete result.locationEmail;
+
+                return result;
+
+        }else{
+            throw new Error(result.data);
+        }
+        // return JSON.parse(result.toString());
+ }catch(error){
+        throw error
+    }
+}
+
+old data
+Pbatch.getBatchdata = async function(batchId){
+    const contract = await chaincode.validateUser('user3')
+    var result = await contract.evaluateTransaction('queryState',batchId)
+    return JSON.parse(result.toString());
+}
+
+
+Pbatch.deleteBatchData = async function(batchId){
+    try{
+        const contract = await chaincode.validateUser('user3')
+        var result = await contract.submitTransaction(
+            'deleteBatchDatas',
+            batchId
+        );
+        return JSON.parse(result.toString());
+
+    }catch(error){
+        throw error;
+    }
+}
+
+Pbatch.remoteMethod('deleteBatchData',{
+    accepts: [
+        {arg: 'batchId', type: 'string'}
+    ],
+    returns: {type: 'object', root: true},
+    http: {verb: 'delete'},
+});
+
+Pbatch.remoteMethod('addBatchdata',{
+    accepts: [
+        {arg: 'data', type: 'batch', http: {source: 'body'}}
+    ],
+    returns: {type: 'object', root: true}
+});
+
+Pbatch.remoteMethod('getBatchdata',{
+    accepts: [{arg: 'batchId',type: 'string'}],
+    returns: {type: 'object', root: true},
+    http: {verb: 'get'},
+});
+};
+
+
+
+
+======================================================================================================================================================
+

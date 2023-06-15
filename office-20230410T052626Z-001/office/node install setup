@@ -27,10 +27,14 @@ nvm uninstall done-------------------------------
 
 node uninstall done .....................................
 
-//nvm ke through node ka default version set karna
+//nvm ke through node ko install karna
 
-#nvm alias default 8.9
-#nvm use
+#curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+#export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+#nvm install 10
+#nvm use 10
 #node -v
 
 
@@ -47,6 +51,11 @@ node uninstall done .....................................
 #docker volume list
 #docker images 
 
+docker rmi --force 3b96a893c1e4  //use any images forcefully remove
+
+cd network/setup/
+#docker-compose down --volumes  //this line use all volume remove
+//this line use all volume are removes
 -----------------------------------
 //Direct show node different type of version
 #cd ~/.nvm/versions/node

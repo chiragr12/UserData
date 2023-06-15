@@ -9,3 +9,8 @@ adempiere
 user:
 idempiere
 
+
+//adempiere ko git hub se clone karne ke baad use folder mai jakar terminal open karke ek command run karna hai
+mvn verify (and sare dependencies running)
+
+
