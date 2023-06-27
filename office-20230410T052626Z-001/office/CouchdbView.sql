@@ -95,7 +95,7 @@ View:-
   	This two method and show your view in couchdb.
     ----------------------------------------------------------------------------------------------------------------------
 
-    if yadi multiple view create karnna hai to-
+    if multiple view create karnna hai to-
 
     const location_list = function(doc) { if (doc.docType === 'location') { emit([doc.gcp, doc._id], {'_id': doc._id}); } }
 const location_lookup = function(doc) { if (doc.docType === 'location') { emit(doc._id, {'_id': doc._id}); } }

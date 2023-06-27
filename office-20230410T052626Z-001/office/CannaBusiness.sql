@@ -27,7 +27,3 @@ Canna Bussiness method:-
     node . (server running start) 
     realmeds-selfcare:4200 mai login karke check karo ui mai kuch changes huwa hai ki nahi
     
-      
- 
-
- 
