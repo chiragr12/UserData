@@ -12,6 +12,8 @@ New adempiere setup :-
 4. open an Eclipse project and import idempiere project
 
 5. go to window -> preference -> search enter Tyco and jre and check two configure java-11 choose or not if not choose please select java-11 and apply and close
+   
+   window->preference->maven->Discovery->open catalog->Tycho Configurator and complete to system restart
 
 6. org.idempiere.p2.targetplatform (this folder is base folder of all project )
 
@@ -36,6 +38,11 @@ New adempiere setup :-
 14. run configuration -> server.product -> select plug-ins and choose customization file and increse file lavel like 1 and auto start select true and press run
 
 
+15. If your system not show server.product then go to this process :-
+	server.product
+     download file and add file in folder (folder only show in lauch configuration)
+     File->import->Run/Debug->launch configuration->choose folder and click check and finish 
+     then show server.product
 
 Postgresql Data Setup:-
 
