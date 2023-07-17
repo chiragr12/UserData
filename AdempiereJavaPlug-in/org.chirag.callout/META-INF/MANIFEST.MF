@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Callout
+Bundle-SymbolicName: org.chirag.callout
+Bundle-Version: 1.0.0.qualifier
+Import-Package: groovyjarjarantlr.collections;version="3.0.8",
+ org.zkoss.util
+Require-Bundle: org.adempiere.base;bundle-version="10.0.0",
+ org.adempiere.plugin.utils;bundle-version="10.0.0"
+Automatic-Module-Name: org.chirag.callout
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Service-Component: chiragcallout.xml

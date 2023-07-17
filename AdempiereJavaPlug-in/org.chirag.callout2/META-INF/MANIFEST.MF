@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Callout2
+Bundle-SymbolicName: org.chirag.callout2
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: org.adempiere.base;bundle-version="10.0.0",
+ org.adempiere.plugin.utils;bundle-version="10.0.0",
+ org.adempiere.base.callout;bundle-version="10.0.0",
+ com.idempiere.customization;bundle-version="1.0.0"
+Automatic-Module-Name: org.chirag.callout2
+Bundle-RequiredExecutionEnvironment: JavaSE-11

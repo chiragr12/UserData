@@ -233,7 +233,9 @@ Please check Summery Level otherwise create menu only file not a Folder
 Create menu is Bold formet another menu easily drag and drop working and working menu tree formet.
 
 ========================================================================================================================================
+Alter a existing table colume give a default value:-
 
+ALTER TABLE [table name] ADD DEFAULT [DEFAULT VALUE] FOR [NAME OF COLUMN]
 
 
 
