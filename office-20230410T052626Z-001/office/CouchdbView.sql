@@ -116,7 +116,7 @@ const location = {
 
   ------------------------------------------------------------------------------------------------------------------------
 
-  const products_details = function (doc) { if(doc.docType === 'product') emit([doc.gcp, doc.name], { '_id': doc._id }); }
+const products_details = function (doc) { if(doc.docType === 'product') emit([doc.gcp, doc.name], { '_id': doc._id }); }
 const products_list = function (doc) { if(doc.docType === 'product') emit([doc.gcp, doc.gln, doc._id], { '_id': doc._id }); }
 const products_lookup = function(doc) { if (doc.docType === 'product') { emit(doc._id, {'_id': doc._id}); } }
 const products = {

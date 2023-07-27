@@ -1,5 +1,4 @@
 Tenant:-
-		If you are created tenant fill up all requirment and change user and admin for your requirement and mainly important work is dont choose default coa and give path (/home/chirag/idempiere/idempiere/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv) your code then working fine. 
 
 		Tenant Complete setup from scratch:-
 
@@ -36,7 +35,7 @@ Tenant:-
 	5.	Create new product:-
 	
 	    some important field will be created
-	    like Product Category,UOM,Freight Category,and bottom side Price filed choose and press + icon creat new records
+	    like Product Category,UOM,Freight Category,and bottom side Price filed choose and press + icon create new records
 
 	    Product Category :-
 	    searchkey,name,Material Policy - FiFo then save
@@ -54,5 +53,6 @@ Tenant:-
 	    Version:-
 	    Name, Valid From,go to price list schema (Name,Valid,Schema Type)
 
+	    /home/chirag/idempiere/idempiere/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv
 
-			
+	    /home/ubuntu/WarePro/idempiere-server/data/import/AccountingDefaultsOnly.csv

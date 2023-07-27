@@ -114,3 +114,15 @@ Old Scratch Setup Throw Error :-
 -- 	if (!poolProperties.containsKey("password")) { //line no 756
 --     			poolProperties.put("password", "adempiere");(this line password added)
 --     		}	
+
+
+
+new ui Adempiere Setup our system:-
+
+git clone wms/folder
+git checkout ui_dev
+import project in Eclipse and go to targetplatform
+if you not remove error then go to terminal and press mvn verify
+afetr verify Eclipse maven update project and remove all error
+
+ 
