@@ -5,7 +5,7 @@ Canna Bussiness method:-
     create new file configs folder mai
    #gcp_labels.json (file name) (Ex. - 930270551_labels.json)
     understanding ke liye defaul_labels.json se method ko copy karte hai.
-    jo chnages karna hai uske only value mai change karna hai
+    jo changes karna hai uske only value mai change karna hai
 
    Ex. - ("medicines": "Product")
     isi prakar jo change karna hai wo karte hai

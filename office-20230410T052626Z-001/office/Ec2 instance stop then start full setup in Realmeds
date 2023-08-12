@@ -5,7 +5,7 @@
 3. check forever logs running or not
 	#forever logs (not show logs)
 	#docker ps (not show any container)
-4. go to raalmeds and setup our container
+4. go to realmeds and setup our container
 	#cd realmeds/network/setup
 	#docker-compose -f docker-compose.yml up -d ca.realmeds.io orderer.realmeds.io peer0.org1.realmeds.io couchdb cli
 	#cd ../..

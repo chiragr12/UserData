@@ -70,11 +70,16 @@ Client/Tenant all details query:-
 
 SELECT * FROM adempiere.AD_Client WHERE AD_Client_ID = 1000001
 SELECT * FROM adempiere.C_Calendar WHERE AD_Client_ID = 1000001
+SELECT * FROM adempiere.M_Costtype WHERE AD_Client_ID = 1000001
+SELECT * FROM adempiere.C_Year WHERE AD_Client_ID = 1000001
+SELECT * FROM adempiere.C_Period WHERE AD_Client_ID = 1000001
 SELECT * FROM adempiere.C_AcctSchema WHERE AD_Client_ID = 1000001
 SELECT * FROM adempiere.C_Bp_Group WHERE AD_Client_ID = 1000001
 SELECT * FROM adempiere.C_PaymentTerm WHERE AD_Client_ID = 1000001
 
 SELECT * FROM adempiere.AD_ClientInfo WHERE AD_Client_ID = 1000001
+//not show some id like ad_tree_menu_id,ad_tree_org_id,ad_tree_bpartner_id,ad_tree_project_id,ad_tree_salesregion_id,ad_tree_product_id,m_product_freight_id,
+c_bpartnercashtrx_id,ad_tree_activity_id,ad_tree_campaign_id
 
 SELECT * FROM adempiere.AD_Org WHERE AD_Client_ID = 1000001
 

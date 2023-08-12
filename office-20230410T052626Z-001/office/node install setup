@@ -4,7 +4,7 @@
 //node ko lene ke liye
 #nvm use 10 //node 10 version aa jayega
 
-//nvm uninstall setup
+Nvm uninstall setup :-
 
 #nvm deactivate // show path .nvm/ folder remove command
 #rm -rf .nvm/
@@ -17,7 +17,7 @@
 nvm uninstall done-------------------------------
 
 
-//node complete uninstall setup
+Node complete uninstall setup :-
 
 #which node //show path
 #sudo apt-get remove nodejs
@@ -27,7 +27,7 @@ nvm uninstall done-------------------------------
 
 node uninstall done .....................................
 
-//nvm ke through node ko install karna
+NVM ke through Node ko install karna :-
 
 #curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
 #export NVM_DIR="$HOME/.nvm"
@@ -41,7 +41,7 @@ node uninstall done .....................................
 
 ---------------------------------------------------------
 
-//docker complete remove image,container,volume and network
+Docker complete remove image,container,volume and network :-
 
 #docker stop $(docker ps -a -q)
 #docker rm -f $(docker ps -aq)
@@ -60,6 +60,27 @@ cd network/setup/
 //Direct show node different type of version
 #cd ~/.nvm/versions/node
 #ll
+
+-------------------------------------------------------------------------------------------------------------
+Git remove command :-
+
+#sudo apt-get remove git
+#sudo apt-get purge git
+-------------------------------------------------
+Docker-compose remove :-
+
+#sudo rm /usr/local/bin/docker-compose
+
+Docker remove :-
+
+#sudo apt-get purge docker-ce docker-ce-cli containerd.io
+#sudo rm -rf /var/lib/docker
+#sudo rm -rf /etc/docker
+
+----------------------------------------------------------------------------------------------------
+Awscli remove :-
+
+#sudo apt-get remove awscli
 
 
 
