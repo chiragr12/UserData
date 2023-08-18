@@ -145,3 +145,16 @@ SELECT * FROM adempiere.M_InOut WHERE AD_Client_ID = 1000001
 //salesrep_id not find table
 SELECT * FROM adempiere.M_InOutLine WHERE AD_Client_ID = 1000001
 SELECT * FROM adempiere.M_Transaction WHERE AD_Client_ID = 1000001
+
+
+==================================================================================================================================================================
+Alter any table with terminal change possible:-
+ALTER TABLE adempiere.C_Orderline ADD COLUMN ExpiryDate DATE;
+
+
+How to check Product is valid or not with Qty and show warehouse name:-
+SELECT b.name, a.qtyentered, c.name
+FROM adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id
+join adempiere.m_warehouse c on a.m_warehouse_id = c.m_warehouse_id
+WHERE expirydate IS NULL OR expirydate < CURRENT_DATE;
