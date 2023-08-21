@@ -158,3 +158,8 @@ FROM adempiere.c_orderline a
 join adempiere.m_product b on a.m_product_id = b.m_product_id
 join adempiere.m_warehouse c on a.m_warehouse_id = c.m_warehouse_id
 WHERE expirydate IS NULL OR expirydate < CURRENT_DATE;
+
+
+select b.name from adempiere.c_payment a
+join adempiere.c_bpartner b on a.c_bpartner_id = b.c_bpartner_id
+where a.isreceipt = 'Y'and a.docstatus = 'DR'

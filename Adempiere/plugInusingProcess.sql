@@ -1,9 +1,11 @@
 Create a new Plug in Process :-
 
 1. Create a new Plug in with Eclipse
+
 	File>New>Other>Plug-in-Project
     and create a new 2 Package one Package is Model class and Second Package is Factory class
     every Package create a new class and Model class main Code and Factory class using link to Model class
+
     and create a new .xml file using Plug in development > Component Defination and create .xml file name, name belong to unquie and path are providing in Factory class name this is the main Way
     go to overview and add file
     Name - service.ranking
