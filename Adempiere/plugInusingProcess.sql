@@ -12,7 +12,7 @@ Create a new Plug in Process :-
     Type - Integer
     Values - 100
     and press OK
-    go to Services and Add IProcessFactory
+    go to Services and Add IProcessFactory (org.adempiere.base.IProcessFactory)
     Plug in all linking is completed
     Your Plug in kis Working fine in local otherwise every time through Error.
 

@@ -2,6 +2,9 @@
 2. Go to idempiere login SuperUser/GardenAdmin
 3. Search in Web Services Security create new and fill up required field
 
+(soap create a new project and copy this link directly paste this link
+https://localhost:8444/ADInterface/services/ModelADService?wsdl
+this link is direct use no any changes.)
 
 CreateUser:-
 
@@ -128,9 +131,9 @@ Read Data:-
 	Table - Ad_User_User/Contact
 	save and create default parameters, this is a very good way because required value auto update If you are not using some error and 
 	this error not easily resolve
-	and you chech table name and action is using constrant value not a free value
+	and you check table name and action is using constrant value not a free value
 
-	There is a Web Services parameters in left bottom and seen Action  value  read (This value change and create is also changed)
+	There is a Web Services parameters in left bottom and seen Action  value  Read (This value change and create is also changed)
 
    There is a Web Services Access in Middle bottom click + icon
    and select a role this line provide a restriction who is seen or not and save 
@@ -222,6 +225,9 @@ IF YOU ARE USING WILDCARD(*,% and other) then create a reference and put referen
 and some line code write in Eclipse 
 
 
+Query Data Show Whole Data 
+
+
 =============================================================================================================================================================
 Delete Data:-
 
@@ -294,7 +300,7 @@ Update data:-
          <_0:ModelCRUDRequest>
             <_0:ModelCRUD>
                <_0:serviceType>updateUser</_0:serviceType>
-               <_0:RecordID>1000001</_0:RecordID>
+               <_0:RecordID>1000001</_0:RecordID>   (Table RecordID like you use User_user then RecordID is ad_user_id)
                <_0:DataRow>
                   <_0:field column="Name">  (If you ine filed update then put your task 5 field update then put the value)
                      <_0:val>DAP</_0:val>

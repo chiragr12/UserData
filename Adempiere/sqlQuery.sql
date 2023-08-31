@@ -163,3 +163,52 @@ WHERE expirydate IS NULL OR expirydate < CURRENT_DATE;
 select b.name from adempiere.c_payment a
 join adempiere.c_bpartner b on a.c_bpartner_id = b.c_bpartner_id
 where a.isreceipt = 'Y'and a.docstatus = 'DR'
+
+select b.name, a.grandtotal from adempiere.c_invoice a
+join adempiere.c_bpartner b on a.c_bpartner_id = b.c_bpartner_id 
+where issotrx = 'Y' and ispaid = 'N'
+
+SELECT bp.Name AS CustomerName,inv.DocumentNo AS InvoiceNumber,
+inv.DateInvoiced AS InvoiceDate,inv.TotalLines AS InvoiceAmount
+FROM adempiere.C_BPartner bp
+INNER JOIN adempiere.C_Invoice inv ON bp.C_BPartner_ID = inv.C_BPartner_ID
+LEFT JOIN adempiere.C_Payment pay ON inv.C_Invoice_ID = pay.C_Invoice_ID
+WHERE inv.DateInvoiced <= (CURRENT_DATE - INTERVAL '1 month')
+AND pay.C_Payment_ID IS NULL AND inv.issotrx = 'Y'
+
+
+
+==================================================================================================================================================================
+If your Column Type is char to change integer :-
+Starting three query using convert char to integer
+and last Query using integer max length using like mobile no is 10 digit numeric(10,0)
+
+SELECT * FROM adempiere.c_bankaccount
+WHERE MICR ~ '[^0-9]+';
+
+UPDATE adempiere.c_bankaccount
+SET MICR = NULL -- or a default numeric value
+WHERE MICR ~ '[^0-9]+';
+
+ALTER TABLE adempiere.c_bankaccount
+ALTER COLUMN MICR TYPE integer USING MICR::integer;
+
+ALTER TABLE adempiere.c_bankaccount
+ALTER COLUMN MICR TYPE numeric(9, 0);
+
+==================================================================================================================================================================
+If Alert Name for bill overdue in 21 DAys
+
+SELECT 
+a.name as Name,
+b.c_invoice_id as Invoice,
+b.dateinvoiced as Date,
+b.grandtotal as Amount
+FROM adempiere.c_invoice b
+JOIN adempiere.c_bpartner a on a.c_bpartner_id = b.c_bpartner_id
+WHERE b.ispaid = 'N' -- Unpaid
+AND b.issotrx = 'Y'	-- Show only Sales Records
+AND b.dateinvoiced + INTERVAL '21 days' <= current_date;
+
+
+==================================================================================================================================================================
