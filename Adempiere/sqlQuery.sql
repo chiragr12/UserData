@@ -151,6 +151,10 @@ SELECT * FROM adempiere.M_Transaction WHERE AD_Client_ID = 1000001
 Alter any table with terminal change possible:-
 ALTER TABLE adempiere.C_Orderline ADD COLUMN ExpiryDate DATE;
 
+Delete the Existing Column
+Alter Table adempiere.c_orderline drop column BatchNo;
+
+
 
 How to check Product is valid or not with Qty and show warehouse name:-
 SELECT b.name, a.qtyentered, c.name
@@ -212,3 +216,27 @@ AND b.dateinvoiced + INTERVAL '21 days' <= current_date;
 
 
 ==================================================================================================================================================================
+Batch_No,BatchDate and ExpiryDate add in idempiere:-
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN Batch_No numeric;
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN BatchDate DATE;
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN ExpiryDate DATE;
+
+SELECT * FROM adempiere.c_orderline
+WHERE c_orderline_id = '100'::integer;
+
+Alter Table adempiere.c_orderline drop column BatchNo;
+
+ALTER TABLE adempiere.c_orderline ALTER COLUMN Batch_No TYPE varchar(14);
+
+==================================================================================================================================================================
+Window Selecting Query:- Using client_id,user_id,role_id
+
+select c.name as User_Name,b.name as Role_Name,e.name as Access_Window from adempiere.ad_user_roles a
+join adempiere.ad_role b on a.ad_role_id = b.ad_role_id
+join adempiere.ad_user c on a.ad_user_id = c.ad_user_id
+join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id
+join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
+where a.ad_client_id = 11 and c.ad_user_id = 1000027 and a.ad_role_id = 102
