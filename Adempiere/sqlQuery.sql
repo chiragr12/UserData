@@ -240,3 +240,60 @@ join adempiere.ad_user c on a.ad_user_id = c.ad_user_id
 join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id
 join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
 where a.ad_client_id = 11 and c.ad_user_id = 1000027 and a.ad_role_id = 102
+
+
+==================================================================================================================================================================
+Currently Working Data:-
+
+select * from adempiere.c_order
+where issotrx = 'Y'
+and ad_client_id = 11
+
+
+SELECT kc.ColumnName, dc.ColumnName, t.TableName, rt.IsValueDisplayed FROM adempiere.AD_Ref_Table rt INNER JOIN adempiere.AD_Column kc ON rt.AD_Key=kc.AD_Column_ID INNER JOIN adempiere.AD_Column dc ON rt.AD_Display=dc.AD_Column_ID INNER JOIN adempiere.AD_Table t ON rt.AD_Table_ID=t.AD_Table_ID WHERE rt.AD_Reference_ID=1
+
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN Batch_No numeric;
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN BatchDate DATE;
+
+ALTER TABLE adempiere.C_Orderline ADD COLUMN ExpiryDate DATE;
+
+SELECT * FROM adempiere.c_orderline
+WHERE c_orderline_id = '100'::integer;
+
+Alter Table adempiere.c_orderline drop column BatchNo;
+
+ALTER TABLE adempiere.c_orderline ALTER COLUMN Batch_No TYPE varchar(14);
+
+select * from adempiere.ad_client
+
+select * from adempiere.ad_user where ad_client_id = 11
+
+select * from adempiere.ad_user_roles where ad_client_id = 11
+
+select * from adempiere.ad_role where ad_client_id = 11
+
+select * from adempiere.ad_window_access where ad_client_id = 11 and ad_role_id = 1000007
+
+
+select c.name as User_Name,b.name as Role_Name,e.name as Access_Window from adempiere.ad_user_roles a
+join adempiere.ad_role b on a.ad_role_id = b.ad_role_id
+join adempiere.ad_user c on a.ad_user_id = c.ad_user_id
+join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id
+join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
+where c.ad_user_id = 1000011
+
+// e.name as Access_Window  join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
+// d.ad_window_id as Windows
+//where a.ad_client_id = 11 and c.ad_user_id = 1000011 and a.ad_role_id = 1000007
+
+
+select * from adempiere.ad_user_roles a
+where a.ad_client_id = 11 and a.ad_role_id = 1000007 and a.ad_user_id = 1000011
+
+SELECT ur.AD_User_ID, ur.AD_Role_ID, r.Name AS RoleName FROM adempiere.AD_User_Roles ur 
+INNER JOIN adempiere.AD_Role r ON ur.AD_Role_ID =r.AD_Role_ID
+WHERE ur.AD_User_ID = 1000011
+
+

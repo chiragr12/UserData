@@ -597,4 +597,164 @@ when reference list to search Table data list then called getRefList,
    </soapenv:Body>
 </soapenv:Envelope>
 
+==================================================================================================================================================================
+Current working web services:-
+
+readData
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:_0="http://idempiere.org/ADInterface/1_0">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <_0:readData>
+         <_0:ModelCRUDRequest>
+            <_0:ModelCRUD>
+               <_0:serviceType>new readData</_0:serviceType>
+                <_0:TableName></_0:TableName>
+               <_0:RecordID>103</_0:RecordID>
+            </_0:ModelCRUD>
+            <_0:ADLoginRequest>
+               <_0:user>SuperUser</_0:user>
+               <_0:pass>System</_0:pass>
+               <_0:lang>112</_0:lang>
+               <_0:ClientID>11</_0:ClientID>
+               <_0:RoleID>102</_0:RoleID>
+               <_0:OrgID>50007</_0:OrgID>
+               <_0:WarehouseID>1000000</_0:WarehouseID>
+               <_0:stage>0</_0:stage>
+            </_0:ADLoginRequest>
+         </_0:ModelCRUDRequest>
+      </_0:readData>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+updateData
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:_0="http://idempiere.org/ADInterface/1_0">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <_0:updateData>
+         <_0:ModelCRUDRequest>
+            <_0:ModelCRUD>
+               <_0:serviceType>newUpdateData</_0:serviceType>
+               <_0:RecordID>1000033</_0:RecordID>
+                <_0:DataRow>
+                  <_0:field column="Value" >
+                     <_0:val>chiru</_0:val>
+                  </_0:field>
+               </_0:DataRow>
+            </_0:ModelCRUD>
+            <_0:ADLoginRequest>
+               <_0:user>SuperUser</_0:user>
+               <_0:pass>System</_0:pass>
+               <_0:lang>112</_0:lang>
+               <_0:ClientID>11</_0:ClientID>
+               <_0:RoleID>102</_0:RoleID>
+               <_0:OrgID>50007</_0:OrgID>
+               <_0:WarehouseID>1000000</_0:WarehouseID>
+               <_0:stage>0</_0:stage>
+            </_0:ADLoginRequest>
+         </_0:ModelCRUDRequest>
+      </_0:updateData>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+**********************************************************************************************************************************************************
+
+package org.idempiere.web.testing.model;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Properties;
+import org.compiere.process.SvrProcess;
+import org.compiere.util.CLogger;
+import org.compiere.util.DB;
+import org.compiere.util.Env;
+
+public class WebTesting extends SvrProcess{
+   
+   private CLogger log = CLogger.getCLogger(WebTesting.class);
+   private Properties ctx = Env.getCtx();
+   private int clientId = Env.getAD_Client_ID(ctx);
+   private ArrayList<String> accessebleWindows = new ArrayList<>();
+   private String pur = "Purchase Order";
+   private String sale = "Sales Order";
+   private String mate = "Material Receipt";
+   private String store = "Storage Provider";
+   private boolean condtion1 = false;
+   private boolean condtion2 = false;
+   private boolean condtion3 = false;
+   private boolean condtion4 = false;
+
+   @Override
+   protected void prepare() {
+      // TODO Auto-generated method stub  
+   }
+
+   @Override
+   protected String doIt() throws Exception {
+      // TODO Auto-generated method stub
+      try { 
+      String query = "select e.name as Access_Window from adempiere.ad_user_roles a\n"
+            + "join adempiere.ad_role b on a.ad_role_id = b.ad_role_id\n"
+            + "join adempiere.ad_user c on a.ad_user_id = c.ad_user_id\n"
+            + "join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id\n"
+            + "join adempiere.ad_window e on d.ad_window_id = e.ad_window_id\n"
+            + "where c.ad_user_id = 1000034 and a.ad_client_id = " + clientId + ";";
+      
+      PreparedStatement pstm = null;
+      ResultSet rs = null;
+      
+      pstm = DB.prepareStatement(query.toString(), null);
+      rs = pstm.executeQuery();
+      
+      while(rs.next()) {
+         String AccessWindowsName = rs.getString("Access_Window");
+         accessebleWindows.add(AccessWindowsName);
+      }
+      rs.close();
+      pstm.close();
+      
+      for(String aw : accessebleWindows) {
+         if (aw.equals(pur)) {
+            condtion1 = true;
+         }
+         if(aw.equals(sale)) {
+            condtion2 = true;
+         }
+         if(aw.equals(mate)) {
+            condtion3 = true;
+         }
+         if(aw.equals(store)) {
+            condtion4 = true;
+            break;
+         }
+      }
+      if(condtion1) {
+         System.out.println("Purchase Order is Available");
+      }else {
+         System.out.println("Purchase Order is not Available");
+      }
+      if(condtion2) {
+         System.out.println("Sales Order is Available");
+      }else {
+         System.out.println("Sales Order is not Available");
+      }
+      if(condtion3) {
+         System.out.println("Material Recipt is Available");
+      }else {
+         System.out.println("Material Recipt is not Available");
+      }
+      if(condtion4) {
+         System.out.println("Storage provider is Available");
+      }else {
+         System.out.println("Storage provider is not Available");
+      }
+      
+      }catch(Exception e) {
+         System.out.println("somethime error occured");
+      }
+      return "Role show";
+   }
+}
 
