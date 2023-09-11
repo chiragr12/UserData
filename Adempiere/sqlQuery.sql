@@ -296,4 +296,27 @@ SELECT ur.AD_User_ID, ur.AD_Role_ID, r.Name AS RoleName FROM adempiere.AD_User_R
 INNER JOIN adempiere.AD_Role r ON ur.AD_Role_ID =r.AD_Role_ID
 WHERE ur.AD_User_ID = 1000011
 
+==================================================================================================================================================================
+Check product Expiry from current date and show product name, qty and lot no.
+
+select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, c.name as Lot_no from adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id 
+join adempiere.m_lot c on b.m_product_id = c.m_product_id
+join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
+join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
+where a.ad_client_id = 1000002 and a.expirydate < CURRENT_DATE
+
+
+With Locator wareHouse Name:-
+
+select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY,g.value from adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id 
+join adempiere.m_lot c on b.m_product_id = c.m_product_id
+join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
+join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.m_locator g on g.m_locator_id = e.m_locator_id
+where a.ad_client_id = 1000002 and a.expirydate < CURRENT_DATE
+
+==================================================================================================================================================================
+
 
