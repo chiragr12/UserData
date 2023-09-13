@@ -1,0 +1,4 @@
+aws any file download only one command your local system
+
+scp -i "Downloads/democ.pem" ubuntu@3.7.97.129:/home/ubuntu/scratchfile.sql /home/chirag/ram/
+copy     pem file path         os with ip       server file location           local file location

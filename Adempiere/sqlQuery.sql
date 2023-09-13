@@ -282,7 +282,7 @@ join adempiere.ad_role b on a.ad_role_id = b.ad_role_id
 join adempiere.ad_user c on a.ad_user_id = c.ad_user_id
 join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id
 join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
-where c.ad_user_id = 1000011
+where c.ad_client_id = 11 and b.ad_role_id = 1000008
 
 // e.name as Access_Window  join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
 // d.ad_window_id as Windows
@@ -318,5 +318,12 @@ join adempiere.m_locator g on g.m_locator_id = e.m_locator_id
 where a.ad_client_id = 1000002 and a.expirydate < CURRENT_DATE
 
 ==================================================================================================================================================================
+Near one month Expiry product:-
 
-
+select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, c.name as Lot_no from adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id 
+join adempiere.m_lot c on b.m_product_id = c.m_product_id
+join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
+join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.c_order f on f.c_order_id = a.c_order_id
+where a.ad_client_id = 1000002 and a.expirydate >= CURRENT_DATE and a.expirydate <= (CURRENT_DATE + INTERVAL '1 month')
