@@ -239,7 +239,7 @@ join adempiere.ad_role b on a.ad_role_id = b.ad_role_id
 join adempiere.ad_user c on a.ad_user_id = c.ad_user_id
 join adempiere.ad_window_access d on a.ad_role_id = d.ad_role_id
 join adempiere.ad_window e on d.ad_window_id = e.ad_window_id
-where a.ad_client_id = 11 and c.ad_user_id = 1000027 and a.ad_role_id = 102
+where a.ad_client_id = 11 and a.ad_role_id = 102
 
 
 ==================================================================================================================================================================
@@ -327,3 +327,154 @@ join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
 join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
 join adempiere.c_order f on f.c_order_id = a.c_order_id
 where a.ad_client_id = 1000002 and a.expirydate >= CURRENT_DATE and a.expirydate <= (CURRENT_DATE + INTERVAL '1 month')
+
+==================================================================================================================================================================
+Show PO list depend of MR:-
+SELECT
+    po.documentno AS purchase_order,
+    po.dateordered AS order_date,
+    CASE
+        WHEN po.docstatus = 'CO' THEN 'Completed'
+        ELSE 'Not Completed'
+    END AS po_status,
+    CASE
+        WHEN mr.m_inout_id IS NOT NULL THEN 'Material Receipt Created'
+        ELSE 'No Material Receipt'
+    END AS mr_status
+FROM
+    adempiere.c_order po
+LEFT JOIN
+    adempiere.m_inout mr
+ON
+    po.c_order_id = mr.c_order_id
+where po.ad_client_id = 1000002 and po.docstatus = 'CO' and mr.m_inout_id IS null;
+
+==================================================================================================================================================================
+Show PO list if poline qty product less then or null in material receipt line from
+
+SELECT
+    po.documentno AS purchase_order,
+    pol.qtyordered AS po_qty_ordered,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN 'Completed, No Material Receipt'
+        WHEN po.docstatus = 'DR' AND mr.m_inout_id IS NULL THEN 'Drafted, No Material Receipt'
+		WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN 'again created Material Receipt'
+        ELSE 'Not Completed or Material Receipt Exists'
+    END AS status
+FROM
+    adempiere.c_order po
+JOIN
+    adempiere.c_orderline pol
+ON
+    po.c_order_id = pol.c_order_id
+LEFT JOIN
+    adempiere.m_inout mr
+ON
+    po.c_order_id = mr.c_order_id
+WHERE
+    pol.qtyordered > (
+        SELECT
+            COALESCE(SUM(iol.qtyentered), 0)
+        FROM
+            adempiere.m_inoutline iol
+        WHERE
+            iol.c_orderline_id = pol.c_orderline_id
+    ) and po.ad_client_id = 1000002;
+
+TIP:- COALESCE this function is use null value to annotate o value.
+Aggregating Data:- When using aggregate functions like SUM, AVG, or COUNT, COALESCE
+				   can help ensure that NULL values are treated as zero or are not counted, depending on your requirements.
+
+==================================================================================================================================================================
+PO list show when not completed poline qty = inoutline qty:- 				   
+select * from adempiere.m_inoutline
+SELECT
+    po.documentno AS purchase_order,
+    pol.qtyordered AS po_qty_ordered,
+    iol.qtyentered AS inbound_qty
+FROM
+    adempiere.c_order po
+JOIN
+    adempiere.c_orderline pol
+ON
+    po.c_order_id = pol.c_order_id
+JOIN
+    adempiere.m_inoutline iol
+ON
+    pol.c_orderline_id = iol.c_orderline_id
+WHERE po.ad_client_id = 1000002 and
+    pol.qtyordered > iol.qtyentered;
+
+==================================================================================================================================================================
+Show PO List with doc no.,date,supplier,warehouse,product,po qty and status:-
+
+SELECT
+    po.documentno AS purchase_order,
+	bp.name AS Supplier,
+	TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+	wh.name AS Warehouse_Name,
+	pr.name AS Product_Name,
+    pol.qtyordered AS po_qty_ordered,
+    CASE
+        WHEN po.docstatus = 'DR' AND mr.m_inout_id IS NULL THEN 'Drafted, No Material Receipt'
+		WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN 'Completed, No Material Receipt'
+		WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN 'Material Receipt Created because some qty are pendding'
+        ELSE 'Not Completed or Material Receipt Exists'
+    END AS status
+FROM adempiere.c_order po
+JOIN adempiere.c_orderline pol ON po.c_order_id = pol.c_order_id
+LEFT JOIN adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id	
+JOIN adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+JOIN adempiere.m_product pr ON pr.m_product_id = pol.m_product_id
+WHERE pol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = pol.c_orderline_id
+    ) and po.ad_client_id = 1000002;
+
+
+==================================================================================================================================================================
+
+Change Date Formet:-
+SELECT TO_CHAR(dateordered, 'DD-MM-YYYY') AS date_only
+FROM adempiere.c_order where ad_client_id = 1000002 and issotrx = 'N'
+
+
+only Date show not a time stamp:-
+SELECT DATE(dateordered) AS date_only FROM adempiere.c_order where ad_client_id = 1000002 and issotrx = 'N'   
+
+==================================================================================================================================================================
+
+SELECT
+    po.documentno AS purchase_order,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    pr.name AS Product_Name,
+    pol.qtyordered AS po_qty_ordered,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM adempiere.c_order po
+JOIN adempiere.c_orderline pol ON po.c_order_id = pol.c_order_id
+LEFT JOIN adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id 
+JOIN adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+JOIN adempiere.m_product pr ON pr.m_product_id = pol.m_product_id
+WHERE pol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = pol.c_orderline_id
+    ) and po.ad_client_id = 1000002 and po.docstatus = 'CO'; 
+
+==================================================================================================================================================================
+
+
+
+
+
+
+==================================================================================================================================================================
