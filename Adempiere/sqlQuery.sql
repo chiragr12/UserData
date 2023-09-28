@@ -471,10 +471,43 @@ WHERE pol.qtyordered > (
     ) and po.ad_client_id = 1000002 and po.docstatus = 'CO'; 
 
 ==================================================================================================================================================================
+No test:-
+SELECT
+    po.documentno AS purchase_order,
+    pol.line AS po_line,
+    pol.qtyordered AS po_qty_ordered,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN 'Completed, No Material Receipt'
+        WHEN pol.qtyordered > COALESCE(SUM(iol.qty), 0) THEN 'PO Line Quantity > Inbound Shipment Quantity'
+        ELSE 'Not Matched'
+    END AS status,
+    pol.qtyordered - COALESCE(SUM(iol.qty), 0) AS qty_difference
+FROM
+    c_order po
+JOIN
+    c_orderline pol
+ON
+    po.c_order_id = pol.c_order_id
+LEFT JOIN
+    m_inout mr
+ON
+    po.c_order_id = mr.c_order_id
+LEFT JOIN
+    m_inoutline iol
+ON
+    pol.c_orderline_id = iol.c_orderline_id
+WHERE
+    po.docstatus = 'CO'
+GROUP BY
+    po.documentno, pol.line, pol.qtyordered;
 
 
 
 
 
+
+==================================================================================================================================================================
+Current Data record find query:-
+SELECT * FROM adempiere.m_storageonhand WHERE DATE(created) = CURRENT_DATE;
 
 ==================================================================================================================================================================

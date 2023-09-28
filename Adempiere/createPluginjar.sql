@@ -11,4 +11,9 @@ Plug in se jar file create karne ka 2 ways hai:-
   mvn clean install 
   this is the very good way but it consume too much time
 
+
+  Lib file create with Terminal
+  cd idempiereNewChangesUI/wms/idempiere-release-10/org.idempiere.webservices
+  scomp -javasource 11 -out lib/idempiere-xmlbeans.jar WEB-INF/xsd/idempiere-schema.xsd
+
   	
