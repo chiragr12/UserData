@@ -511,3 +511,96 @@ Current Data record find query:-
 SELECT * FROM adempiere.m_storageonhand WHERE DATE(created) = CURRENT_DATE;
 
 ==================================================================================================================================================================
+select a.documentno,
+TO_CHAR(a.movementdate, 'DD-MM-YYYY') AS Date,
+b.name,
+c.name,
+a.description
+from adempiere.m_inventory a
+join adempiere.m_warehouse b on a.m_warehouse_id = b.m_warehouse_id
+join adempiere.ad_org c on a.ad_org_id = c.ad_org_id
+where a.ad_client_id = 1000002 and a.docstatus = 'DR'
+
+==================================================================================================================================================================
+sales order list
+
+SELECT
+    so.documentno,
+    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    bp.name AS Supplier,
+    so.description,
+    CASE
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM
+    adempiere.c_order so
+JOIN
+    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
+JOIN
+    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
+JOIN
+    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN
+    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
+WHERE
+    sol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = sol.c_orderline_id
+    )
+AND
+    so.ad_client_id = 1000002
+AND
+    so.issotrx = 'Y'
+AND
+    so.docstatus = 'CO';
+
+
+==================================================================================================================================================================
+withour adempiere. table name for sales list
+
+SELECT
+    so.documentno,
+    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    bp.name AS Supplier,
+    so.description,
+    CASE
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM
+    c_order so
+JOIN
+    c_orderline sol ON so.c_order_id = sol.c_order_id
+JOIN
+    c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
+JOIN
+    m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN
+    m_inout mr ON so.c_order_id = mr.c_order_id
+WHERE
+    sol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM m_inoutline iol
+        WHERE iol.c_orderline_id = sol.c_orderline_id
+    )
+AND
+    so.ad_client_id = 1000002
+AND
+    so.issotrx = 'Y'
+AND
+    so.docstatus = 'CO';
+
+
+==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================

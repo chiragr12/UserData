@@ -376,3 +376,81 @@ public class MaterialReceiptCreator {
         }
     }
 }
+
+====================================================================================================================================================
+@Override
+	public MRFailedResponceDocument createFailedQty(MRFailedRequestDocument mRFailedRequestDocument) {
+		MRFailedResponceDocument mRFailedResponceDocument = MRFailedResponceDocument.Factory.newInstance();
+		MRFailedResponce mRFailedResponce = mRFailedResponceDocument.addNewMRFailedResponce();
+		MRFailedRequest mRFailedRequest = mRFailedRequestDocument.getMRFailedRequest();
+		ADLoginRequest loginReq = mRFailedRequest.getADLoginRequest();
+		String serviceType = mRFailedRequest.getServiceType();
+		int mInOutID = mRFailedRequest.getMInOutID();
+		int failedQty = mRFailedRequest.getFaieldQty();
+		Trx trx = null;
+		try {
+			CompiereService m_cs = getCompiereService();
+			String trxName = Trx.createTrxName(getClass().getName() + "_");
+			trx = Trx.get(trxName, true);
+			trx.start();
+			
+			String err = login(loginReq, webServiceName, "mrFailed", serviceType);
+			if (err != null && err.length() > 0) {
+				mRFailedResponce.setError(err);
+				mRFailedResponce.setIsError(true);
+				return mRFailedResponceDocument;
+			}
+			
+			if (!serviceType.equalsIgnoreCase("mrFailed")) {
+				mRFailedResponce.setIsError(true);
+				mRFailedResponce.setError("Service type " + serviceType + " not configured");
+				return mRFailedResponceDocument;
+			}
+
+			Properties ctx = m_cs.getCtx();
+			MTable table = MTable.get(ctx, "m_inout");
+			PO po = table.getPO(mInOutID, trx.getTrxName());
+			if (po == null) {
+				mRFailedResponce.setError("order not found for " + mInOutID + "");
+				mRFailedResponce.setIsError(true);
+				return mRFailedResponceDocument;
+			}
+			MInOut mInOut = (MInOut) po;
+			MInOutConfirm mInOutConfirm = new MInOutConfirm(mInOut, "PC");
+			mInOutConfirm.setDocStatus(DocAction.STATUS_Drafted);
+			mInOutConfirm.saveEx();
+			
+			MInOutLine[] lines = mInOut.getLines(false);
+			for (MInOutLine line : lines) {
+				MInOutLineConfirm lineConfirm = new MInOutLineConfirm(mInOutConfirm);
+				lineConfirm.setM_InOutLine_ID(line.get_ID());
+				lineConfirm.setTargetQty(line.getMovementQty());
+				lineConfirm.setConfirmedQty(line.getMovementQty());
+				lineConfirm.saveEx();
+				
+				int confirmID = lineConfirm.get_ID();
+				MInOutLineConfirm_Custom custom = new MInOutLineConfirm_Custom(ctx, confirmID, trx.getTrxName());
+				BigDecimal failedB = new BigDecimal(failedQty);
+				custom.processLine(false, "PC");
+				custom.setQCFailedQty(failedB);
+				custom.saveEx();
+				lineConfirm.saveEx();	
+			}
+			mInOutConfirm.setDocStatus(MInOutConfirm.DOCSTATUS_Completed);
+			mInOutConfirm.saveEx();
+			trx.commit();
+			
+			mRFailedResponce.setIsError(false);
+			mRFailedResponce.setCreateConfirmationDocumentNumber(mInOutConfirm.getDocumentNo());
+			mRFailedResponce.setCreateConfirmationId(mInOutConfirm.get_ID());
+				
+		}catch(Exception e) {
+			mRFailedResponce.setIsError(true);
+			mRFailedResponce.setError(e.getMessage());
+			return mRFailedResponceDocument;	
+		}finally {
+			getCompiereService().disconnect();
+			trx.close();
+		}
+		return mRFailedResponceDocument;
+	}
