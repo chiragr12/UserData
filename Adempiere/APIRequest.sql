@@ -212,3 +212,197 @@ DocAction:-
     }
 }
 ==================================================================================================================================================================
+PIList:-
+{
+    "PIListRequest": {
+        "serviceType": "pIList",
+        "ADLoginRequest": {
+            "user": "SuperUser",
+            "pass": "System",
+            "lang": "112",
+            "ClientID": "1000002",
+            "RoleID": "1000005",
+            "OrgID": "0",
+            "WarehouseID": "0",
+            "stage": "0"
+        }
+    }
+}
+
+==================================================================================================================================================================
+PIDetails:-
+{
+    "pIDeatilsRequest": {
+        "serviceType": "pIDetails",
+        "mInventoryId": "1000032",
+        "ADLoginRequest": {
+            "user": "SuperUser",
+            "pass": "System",
+            "lang": "112",
+            "ClientID": "1000002",
+            "RoleID": "1000005",
+            "OrgID": "0",
+            "WarehouseID": "0",
+            "stage": "0"
+        }
+    }
+}
+
+==================================================================================================================================================================
+PIQtyChanges:-
+
+
+
+==================================================================================================================================================================
+SOLIst:-
+// {
+//     "SOListRequest": {
+//         "serviceType": "sOList",
+//         "ADLoginRequest": {
+//             "user": "SuperUser",
+//             "pass": "System",
+//             "lang": "112",
+//             "ClientID": "1000001",
+//             "RoleID": "1000002",
+//             "OrgID": "0",
+//             "WarehouseID": "0",
+//             "stage": "0"
+//         }
+//     }
+// }//server
+{
+    "SOListRequest": {
+        "serviceType": "sOList",
+        "ADLoginRequest": {
+            "user": "SuperUser",
+            "pass": "System",
+            "lang": "112",
+            "ClientID": "1000002",
+            "RoleID": "1000005",
+            "OrgID": "0",
+            "WarehouseID": "0",
+            "stage": "0"
+        }
+    }
+} //localhost
+==================================================================================================================================================================
+SODetails:-
+// {
+//     "SODetailRequest": {
+//         "serviceType": "sODetail",
+//         "documentNo": "50005",
+//         "ADLoginRequest": {
+//             "user": "SuperUser",
+//             "pass": "System",
+//             "lang": "112",
+//             "ClientID": "11",
+//             "RoleID": "102",
+//             "OrgID": "0",
+//             "WarehouseID": "0",
+//             "stage": "0"
+//         }
+//     }
+// }//server
+{
+    "SODetailRequest": {
+        "serviceType": "sODetail",
+        "documentNo": "50010",
+        "ADLoginRequest": {
+            "user": "SuperUser",
+            "pass": "System",
+            "lang": "112",
+            "ClientID": "1000002",
+            "RoleID": "1000005",
+            "OrgID": "0",
+            "WarehouseID": "0",
+            "stage": "0"
+        }
+    }
+}
+==================================================================================================================================================================
+Create Shipment :-
+// {
+//     "CreateSCRequest": {
+//         "serviceType": "createSC",
+//         "cOrderId": "1000030",
+//         "ADLoginRequest": {
+//             "user": "SuperUser",
+//             "pass": "System",
+//             "lang": "112",
+//             "ClientID": "1000001",
+//             "RoleID": "1000002",
+//             "OrgID": "0",
+//             "WarehouseID": "0",
+//             "stage": "0"
+//         },
+//         "shipmentLines": [
+//             {
+//                 "productId": 136,
+//                 "productName": "Mulch 10#",
+//                 "cOrderlineId": 1000042,
+//                 "uomId": 100,
+//                 "qnty": 10,
+//                 "locator": 101
+//             },
+//             {
+//                 "productId": 136,
+//                 "productName": "Mulch 10#",
+//                 "cOrderlineId": 1000043,
+//                 "uomId": 100,
+//                 "qnty": 20,
+//                 "locator": 101
+//             },
+//             {
+//                 "productId": 136,
+//                 "productName": "Mulch 10#",
+//                 "cOrderlineId": 1000044,
+//                 "uomId": 100,
+//                 "qnty": 30,
+//                 "locator": 101
+//             }
+//             ,
+//             {
+//                 "productId": 137,
+//                 "productName": "Mulch 10#",
+//                 "cOrderlineId": 1000045,
+//                 "uomId": 100,
+//                 "qnty": 2,
+//                 "locator": 101
+//             }
+//         ]
+//     }
+// }//server
+{
+    "CreateSCRequest": {
+        "serviceType": "createSC",
+        "cOrderId": "1000232",
+        "ADLoginRequest": {
+            "user": "SuperUser",
+            "pass": "System",
+            "lang": "112",
+            "ClientID": "1000002",
+            "RoleID": "1000005",
+            "OrgID": "0",
+            "WarehouseID": "0",
+            "stage": "0"
+        },
+        "shipmentLines": [
+            {
+                "productId": 1000041,
+                "productName": "Antwar",
+                "cOrderlineId": 1000268,
+                "uomId": 100,
+                "qnty": 5,
+                "locator": 1000031
+            },
+            {
+                "productId": 1000043,
+                "productName": "POLQ",
+                "cOrderlineId": 1000269,
+                "uomId": 100,
+                "qnty": 1,
+                "locator": 1000031
+            }
+        ]
+    }
+}

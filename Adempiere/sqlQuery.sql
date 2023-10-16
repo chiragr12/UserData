@@ -297,38 +297,6 @@ INNER JOIN adempiere.AD_Role r ON ur.AD_Role_ID =r.AD_Role_ID
 WHERE ur.AD_User_ID = 1000011
 
 ==================================================================================================================================================================
-Check product Expiry from current date and show product name, qty and lot no.
-
-select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, c.name as Lot_no from adempiere.c_orderline a
-join adempiere.m_product b on a.m_product_id = b.m_product_id 
-join adempiere.m_lot c on b.m_product_id = c.m_product_id
-join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
-join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
-where a.ad_client_id = 1000002 and a.expirydate < CURRENT_DATE
-
-
-With Locator wareHouse Name:-
-
-select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY,g.value from adempiere.c_orderline a
-join adempiere.m_product b on a.m_product_id = b.m_product_id 
-join adempiere.m_lot c on b.m_product_id = c.m_product_id
-join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
-join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.m_locator g on g.m_locator_id = e.m_locator_id
-where a.ad_client_id = 1000002 and a.expirydate < CURRENT_DATE
-
-==================================================================================================================================================================
-Near one month Expiry product:-
-
-select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, c.name as Lot_no from adempiere.c_orderline a
-join adempiere.m_product b on a.m_product_id = b.m_product_id 
-join adempiere.m_lot c on b.m_product_id = c.m_product_id
-join adempiere.m_attributesetinstance d on c.m_lot_id = d.m_lot_id
-join adempiere.m_storageonhand e on d.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.c_order f on f.c_order_id = a.c_order_id
-where a.ad_client_id = 1000002 and a.expirydate >= CURRENT_DATE and a.expirydate <= (CURRENT_DATE + INTERVAL '1 month')
-
-==================================================================================================================================================================
 Show PO list depend of MR:-
 SELECT
     po.documentno AS purchase_order,
@@ -525,7 +493,7 @@ where a.ad_client_id = 1000002 and a.docstatus = 'DR'
 sales order list
 
 SELECT
-    so.documentno,
+    DISTINCT(so.documentno),
     TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
     bp.name AS Supplier,
@@ -558,10 +526,48 @@ AND
     so.docstatus = 'CO';
 
 
-==================================================================================================================================================================
-withour adempiere. table name for sales list
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+DESC Order:-
 
 SELECT
+    DISTINCT(so.documentno),
+    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    bp.name AS Supplier,
+    so.description,
+    CASE
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM
+    adempiere.c_order so
+JOIN
+    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
+JOIN
+    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
+JOIN
+    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN
+    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
+WHERE
+    sol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = sol.c_orderline_id
+    )
+AND
+    so.ad_client_id = 1000002
+AND
+    so.issotrx = 'Y'
+AND
+    so.docstatus = 'CO'
+ORDER BY so.documentno DESC;    
+
+
+==================================================================================================================================================================
+without adempiere. table name for sales list
+
+SELECT DISTINCT
     so.documentno,
     TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
@@ -592,15 +598,243 @@ AND
 AND
     so.issotrx = 'Y'
 AND
-    so.docstatus = 'CO';
+    so.docstatus = 'CO'
+ORDER BY so.documentno DESC;
+
+
+
+==================================================================================================================================================================
+po data multiple same product but not minus repeat time :-
+
+SELECT (a.qtyordered - COALESCE(SUM(c.qtyentered), 0)) AS outstanding_qty, e.m_product_id as productId, a.c_order_id, a.c_uom_id, a.c_orderline_id, e.name AS product_name
+FROM adempiere.c_orderline a 
+JOIN adempiere.c_order d ON d.c_order_id = a.c_order_id 
+LEFT JOIN adempiere.m_inout b ON a.c_order_id = b.c_order_id 
+LEFT JOIN adempiere.m_inoutline c ON c.m_inout_id = b.m_inout_id AND c.c_orderline_id = a.c_orderline_id
+JOIN adempiere.m_product e ON e.m_product_id = a.m_product_id 
+WHERE d.documentno = '800022' AND d.ad_client_id = '11' AND a.c_order_id = (
+  SELECT c_order_id FROM adempiere.c_order WHERE documentno = '800022' AND ad_client_id = '11'
+)
+GROUP BY e.m_product_id, e.name, a.qtyordered, a.c_orderline_id, a.c_uom_id, a.c_order_id;
+
+
+==================================================================================================================================================================
+Expiry Product list
+Working Query and no reapeted database:-
+
+select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, att.lot as Lot_no, wh.value as Warehouse_Name from adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id 
+join adempiere.m_inoutline mil on mil.c_orderline_id = a.c_orderline_id
+join adempiere.m_storageonhand e on mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.m_attributesetinstance att on att.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.c_order f on f.c_order_id = a.c_order_id
+join adempiere.m_warehouse wh on wh.m_warehouse_id = f.m_warehouse_id
+where a.ad_client_id = 1000002 and f.issotrx = 'N' and a.expirydate < CURRENT_DATE
+==================================================================================================================================================================
+Working Query near 1 month Expiry:-
+
+select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, att.lot as Lot_no,wh.value as Warehouse_Name from adempiere.c_orderline a
+join adempiere.m_product b on a.m_product_id = b.m_product_id 
+join adempiere.m_inoutline mil on mil.c_orderline_id = a.c_orderline_id
+join adempiere.m_storageonhand e on mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.m_attributesetinstance att on att.m_attributesetinstance_id = e.m_attributesetinstance_id
+join adempiere.c_order f on f.c_order_id = a.c_order_id
+join adempiere.m_warehouse wh on wh.m_warehouse_id = f.m_warehouse_id
+where a.ad_client_id = 1000002 and f.issotrx = 'N'and a.expirydate >= CURRENT_DATE and a.expirydate <= (CURRENT_DATE + INTERVAL '1 month')
+
+==================================================================================================================================================================
+ALL List API DESC Format:-
+PO List:-
+
+SELECT DISTINCT
+    po.documentno AS purchase_order,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM adempiere.c_order po
+JOIN adempiere.c_orderline pol ON po.c_order_id = pol.c_order_id
+LEFT JOIN adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id 
+JOIN adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+WHERE pol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = pol.c_orderline_id
+    ) AND po.ad_client_id = 1000002 AND po.docstatus = 'CO' AND po.issotrx = 'N'
+    ORDER BY po.documentno DESC; 
+    
+-------------------------------------------------------------------------------------------------------------------------------------------------------------    
+ MR List:-
+
+SELECT
+    DISTINCT(po.documentno) AS documentNo,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    co.documentno as orderDocumentno
+FROM
+    adempiere.m_inout po
+JOIN
+    adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id 
+JOIN
+    adempiere.c_order co ON co.c_order_id = po.c_order_id
+JOIN
+    adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+WHERE
+    po.ad_client_id = 1000002
+    AND po.docstatus = 'DR'
+    AND po.ad_orgtrx_id IS NULL
+    ORDER BY po.documentno DESC;
+-------------------------------------------------------------------------------------------------------------------------------------------------------------    
+PI List:-
+
+SELECT
+    a.m_inventory_id,
+    TO_CHAR(a.movementdate, 'DD-MM-YYYY') AS Date,
+    b.name AS Warehouse_Name,
+    c.name AS Org_Name,
+    a.description
+FROM
+    adempiere.m_inventory a
+JOIN
+    adempiere.m_warehouse b ON a.m_warehouse_id = b.m_warehouse_id
+JOIN
+    adempiere.ad_org c ON a.ad_org_id = c.ad_org_id
+WHERE
+    a.ad_client_id = 1000002
+    AND a.docstatus = 'DR'
+    ORDER BY a.m_inventory_id DESC;
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------    
+ SO List:-
+
+SELECT DISTINCT
+    so.documentno as Sales_Order,
+    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    bp.name AS Customer,
+    so.description,
+    CASE
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
+    END AS status
+FROM
+    adempiere.c_order so
+JOIN
+    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
+JOIN
+    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
+JOIN
+    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN
+    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
+WHERE
+    sol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = sol.c_orderline_id
+    )
+AND
+    so.ad_client_id = 1000002
+AND
+    so.issotrx = 'Y'
+AND
+    so.docstatus = 'CO'
+    ORDER BY so.documentno DESC;
+
+
+==================================================================================================================================================================
+If m_inventoryline is null then m_inventory list also not show:-
+
+SELECT DISTINCT(mi.m_inventory_id),TO_CHAR(mi.movementdate, 'DD-MM-YYYY') AS Date,b.name AS Warehouse_Name,
+    o.name AS Org_Name,mi.description FROM adempiere.m_inventory mi
+JOIN adempiere.m_inventoryline il ON il.m_inventory_id = mi.m_inventory_id
+JOIN adempiere.m_warehouse b ON mi.m_warehouse_id = b.m_warehouse_id
+JOIN adempiere.ad_org o ON mi.ad_org_id = o.ad_org_id
+WHERE mi.ad_client_id = 11 AND il.m_inventory_id is not null AND mi.docStatus = 'DR' ORDER BY mi.m_inventory_id DESC;
+
+
+==================================================================================================================================================================
+Sales Order Details API currection enter document no only see required field not all field:-
+
+SELECT
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    bp.name AS Supplier,
+    wh.name AS Warehouse_Name,
+    po.description,
+    ml.m_locator_id,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true
+    END AS status
+FROM
+    adempiere.c_order po
+JOIN
+    adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id
+LEFT JOIN
+    adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN
+    adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+JOIN
+    adempiere.m_locator ml ON ml.m_warehouse_id = wh.m_warehouse_id
+WHERE
+    po.documentno = '50010'
+    AND isDefault = 'Y' AND po.issotrx = 'Y';
+
+
+==================================================================================================================================================================
+Search Query for Receiving:-
+
+SELECT DISTINCT
+    po.documentno AS purchase_order,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true
+    END AS status
+FROM adempiere.c_order po
+JOIN adempiere.c_orderline pol ON po.c_order_id = pol.c_order_id
+LEFT JOIN adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id
+JOIN adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+WHERE pol.qtyordered > (
+    SELECT COALESCE(SUM(iol.qtyentered), 0)
+    FROM adempiere.m_inoutline iol
+    WHERE iol.c_orderline_id = pol.c_orderline_id
+)
+AND po.ad_client_id = 1000002
+AND po.docstatus = 'CO'
+AND po.issotrx = 'N'
+AND (
+    po.documentno ILIKE '%' || COALESCE(?, po.documentno) || '%'
+    OR bp.name ILIKE '%' || COALESCE(?, bp.name) || '%'
+    OR wh.name ILIKE '%' || COALESCE(?, wh.name) || '%'
+    OR po.description ILIKE '%' || COALESCE(?, po.description) || '%'
+)
+ORDER BY po.documentno DESC;
+
+==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
 
 
+==================================================================================================================================================================
+
 
 ==================================================================================================================================================================
 
+
+==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
