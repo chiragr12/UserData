@@ -56,3 +56,6 @@ Tenant:-
 	    /home/chirag/idempiere/idempiere/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv
 
 	    /home/ubuntu/WarePro/idempiere-server/data/import/AccountingDefaultsOnly.csv
+
+	    New Local path:-
+	    /home/chirag/newPipra/wms/idempiere-release-10/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv

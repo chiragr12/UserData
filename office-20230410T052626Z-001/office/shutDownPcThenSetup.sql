@@ -10,7 +10,7 @@ cd ../../script/network
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
-/////////////////// Starting Steup \\\\\\\\\\\\\\\\\\\\\\\\
+/////////////////// Starting Setup \\\\\\\\\\\\\\\\\\\\\\\\
 
 If system starting setup step by step do work
 
@@ -49,32 +49,32 @@ If system starting setup step by step do work
 4.Realmeds-Selfcare/apiServer/server this terminal also come
 
 	line no. 90 uncomment and run (await realmeds.insert(dappUser))
-	#node create-couchDb-view.js
+	* node create-couchDb-view.js
 	go to browser and create Organizations:-
 	Manage Organization +add org.
 	GCP = 9 digit(Unique)
 
 	line no. 92 uncomment and run (await realmeds.insert(organization))
-	#node create-couchDb-view.js
+	* node create-couchDb-view.js
 	go to browser and create location:-
 	Manage Location -> all brand choose a org. +add location
 	GLN = GCP/4digit random no.
 	Put the real latitude and longitude
 
 	line no. 91 uncomment and run (await realmeds.insert(location))
-	#node create-couchDb-view.js
+	* node create-couchDb-view.js
 	go to browser and create medicine:-	
 	GLN = 0GCP 4 digit random no.
 
 	line no. 93 uncomment and run (await realmeds.insert(product))
-	#node create-couchDb-view.js
+	* node create-couchDb-view.js
 	go to browser and create user:-
 	Manage User + add user
 	fill the details
     and one logout nad login
 
 	line no. 89 uncomment and run (await realmeds.insert(batch))
-	#node create-couchDb-view.js    
+	* node create-couchDb-view.js    
 	another user login page and Create a Label
 	Manage lable -> create  
 	Batch no. bt-1(kuch bhi)

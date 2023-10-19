@@ -11,3 +11,4 @@ ALTER TABLE adempiere.C_Orderline ADD COLUMN ExpiryDate DATE;
 	  search Purchase Order and choose PO Line Tab
 	  go to create field then add your need fields
 	  Your Requiemnet change your Field Sequence and other modification your field value.
+	  

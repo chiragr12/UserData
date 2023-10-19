@@ -43,5 +43,3 @@ How to add jasper file in jasperstudio:-
 go to file -> open file -> and choose file for your location and open
 
 first you check Preview it is working or not
-
-
