@@ -649,7 +649,7 @@ PO List:-
 SELECT DISTINCT
     po.documentno AS purchase_order,
     bp.name AS Supplier,
-    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    TO_CHAR(po.dateordered, 'DD/MM/YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
     po.description,
     CASE
@@ -674,7 +674,7 @@ WHERE pol.qtyordered > (
 SELECT
     DISTINCT(po.documentno) AS documentNo,
     bp.name AS Supplier,
-    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    TO_CHAR(po.dateordered, 'DD/MM/YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
     po.description,
     co.documentno as orderDocumentno
@@ -696,7 +696,7 @@ PI List:-
 
 SELECT
     a.m_inventory_id,
-    TO_CHAR(a.movementdate, 'DD-MM-YYYY') AS Date,
+    TO_CHAR(a.movementdate, 'DD/MM/YYYY') AS Date,
     b.name AS Warehouse_Name,
     c.name AS Org_Name,
     a.description
@@ -716,7 +716,7 @@ WHERE
 
 SELECT DISTINCT
     so.documentno as Sales_Order,
-    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    TO_CHAR(so.dateordered, 'DD/MM/YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
     bp.name AS Customer,
     so.description,
@@ -794,7 +794,7 @@ Search Query for Receiving:-
 SELECT DISTINCT
     po.documentno AS purchase_order,
     bp.name AS Supplier,
-    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    TO_CHAR(po.dateordered, 'DD/MM/YYYY') AS Order_Date,
     wh.name AS Warehouse_Name,
     po.description,
     CASE
@@ -823,16 +823,231 @@ AND (
 ORDER BY po.documentno DESC;
 
 ==================================================================================================================================================================
+SELECT b.name AS Product_Name, a.expirydate as Date, e.qtyonhand AS Expiry_QTY, att.lot AS Lot_No, wh.value AS Warehouse_Name, ll.value AS Locator_Name 
+FROM c_orderline a
+JOIN m_product b ON a.m_product_id = b.m_product_id 
+JOIN m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+JOIN m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN c_order f ON f.c_order_id = a.c_order_id
+JOIN m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+JOIN m_locator ll ON ll.m_locator_id = e.m_locator_id
+WHERE a.ad_client_id = 1000002 AND f.issotrx = 'N' AND a.expirydate < CURRENT_DATE
 
 
 ==================================================================================================================================================================
+SELECT b.name AS Product_Name, a.expirydate as Date, e.qtyonhand AS ExpiryQTY, att.lot AS Lot_No, wh.value AS Warehouse_Name, ll.value AS Locator_Name 
+FROM c_orderline a
+JOIN m_product b ON a.m_product_id = b.m_product_id 
+JOIN m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+JOIN m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN c_order f ON f.c_order_id = a.c_order_id
+JOIN m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+JOIN m_locator ll ON ll.m_locator_id = e.m_locator_id
+WHERE a.ad_client_id = 1000002 AND f.issotrx = 'N' AND a.expirydate >= CURRENT_DATE AND a.expirydate <= (CURRENT_DATE + MAKE_INTERVAL(months => 1))
 
 
 ==================================================================================================================================================================
+PO List with search key:-
+SELECT DISTINCT
+    po.documentno AS purchase_order,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD/MM/YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    CASE
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN po.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true
+    END AS status
+FROM adempiere.c_order po
+JOIN adempiere.c_orderline pol ON po.c_order_id = pol.c_order_id
+LEFT JOIN adempiere.m_inout mr ON po.c_order_id = mr.c_order_id
+JOIN adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id 
+JOIN adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+WHERE pol.qtyordered > (
+    SELECT COALESCE(SUM(iol.qtyentered), 0)
+    FROM adempiere.m_inoutline iol
+    WHERE iol.c_orderline_id = pol.c_orderline_id
+) AND po.ad_client_id = '"+ clientID +"'
+AND po.docstatus = 'CO'
+AND po.issotrx = 'N'
+AND (
+    po.documentno ILIKE '%' || COALESCE(?, po.documentno) || '%'
+    OR bp.name ILIKE '%' || COALESCE(?, bp.name) || '%'
+    OR wh.name ILIKE '%' || COALESCE(?, wh.name) || '%'
+    OR po.description ILIKE '%' || COALESCE(?, po.description) || '%'
+)
+ORDER BY po.documentno DESC;
+-------------------------------------------------------------------------------------------------------------------------------
+MR List with search key:-
+SELECT DISTINCT
+    po.documentno AS documentNo,
+    bp.name AS Supplier,
+    TO_CHAR(po.dateordered, 'DD-MM-YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    po.description,
+    co.documentno AS orderDocumentno
+FROM
+    adempiere.m_inout po
+JOIN
+    adempiere.c_bpartner bp ON po.c_bpartner_id = bp.c_bpartner_id
+JOIN
+    adempiere.c_order co ON co.c_order_id = po.c_order_id
+JOIN
+    adempiere.m_warehouse wh ON po.m_warehouse_id = wh.m_warehouse_id
+WHERE
+    po.ad_client_id = '"+ clientID +"'
+    AND po.docstatus = 'DR'
+    AND po.ad_orgtrx_id IS NULL
+    AND (
+        po.documentno ILIKE '%' || COALESCE(?, po.documentno) || '%'
+        OR bp.name ILIKE '%' || COALESCE(?, bp.name) || '%'
+        OR wh.name ILIKE '%' || COALESCE(?, wh.name) || '%'
+        OR po.description ILIKE '%' || COALESCE(?, po.description) || '%'
+        OR co.documentno ILIKE '%' || COALESCE(?, co.documentno) || '%'
+    )
+ORDER BY po.documentno DESC;
+-------------------------------------------------------------------------------------------------------------------------------
+PI List with search key:-
+SELECT
+    a.m_inventory_id AS mrId,
+    TO_CHAR(a.movementdate, 'DD-MM-YYYY') AS Date,
+    b.name AS Warehouse_Name,
+    c.name AS Org_Name,
+    a.description
+FROM
+    adempiere.m_inventory a
+JOIN
+    adempiere.m_warehouse b ON a.m_warehouse_id = b.m_warehouse_id
+JOIN
+    adempiere.ad_org c ON a.ad_org_id = c.ad_org_id
+WHERE
+    a.ad_client_id = '"+ clientID +"'
+    AND a.docstatus = 'DR'
+    AND (
+        a.m_inventory_id::VARCHAR ILIKE '%' || COALESCE(?, a.m_inventory_id::VARCHAR) || '%'
+        OR c.name ILIKE '%' || COALESCE(?, c.name) || '%'
+        OR b.name ILIKE '%' || COALESCE(?, b.name) || '%'
+        OR a.description ILIKE '%' || COALESCE(?, a.description) || '%'
+    )
+ORDER BY a.m_inventory_id DESC;
+------------------------------------------------------------------------------------------------------------------------------
+SO List with search key:-
+SELECT DISTINCT
+    so.documentno AS Sales_Order,
+    TO_CHAR(so.dateordered, 'DD/MM/YYYY') AS Order_Date,
+    wh.name AS Warehouse_Name,
+    bp.name AS Customer,
+    so.description,
+    CASE
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
+        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true
+    END AS status
+FROM
+    adempiere.c_order so
+JOIN
+    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
+JOIN
+    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id
+JOIN
+    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN
+    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
+WHERE
+    sol.qtyordered > (
+        SELECT COALESCE(SUM(iol.qtyentered), 0)
+        FROM adempiere.m_inoutline iol
+        WHERE iol.c_orderline_id = sol.c_orderline_id
+    )
+    AND so.ad_client_id = '"+ clientID +"'
+    AND so.issotrx = 'Y'
+    AND so.docstatus = 'CO'
+    AND (
+        so.documentno ILIKE '%' || COALESCE(?, so.documentno) || '%'
+        OR bp.name ILIKE '%' || COALESCE(?, bp.name) || '%'
+        OR wh.name ILIKE '%' || COALESCE(?, wh.name) || '%'
+        OR so.description ILIKE '%' || COALESCE(?, so.description) || '%'
+    )
+ORDER BY so.documentno DESC;
 
 
 ==================================================================================================================================================================
+Business partner wise payment records:-
+if bill generate and bill not paid then list show business party wise 
 
+SELECT c_invoice_id,grandtotal,TO_CHAR(dateinvoiced, 'DD/MM/YYYY') AS invoice_Date
+FROM adempiere.c_invoice WHERE ad_client_id = 1000002 AND c_bpartner_id = 1000026 AND ispaid = 'N' 
+
+==================================================================================================================================================================
+After 42 days Customer List show based on Invoiced:-
+
+SELECT bp.name AS Customer_Name,TO_CHAR(inv.created, 'DD/MM/YYYY') AS Invoice_Date,inv.grandtotal AS Amonut 
+FROM adempiere.c_invoice inv 
+JOIN adempiere.c_bpartner bp ON bp.c_bpartner_id = inv.c_bpartner_id
+WHERE inv.ad_client_id = 1000002 AND inv.issotrx = 'Y' 
+AND EXTRACT(DAY FROM (CURRENT_DATE - inv.dateinvoiced)) > 42
+
+
+==================================================================================================================================================================
+Create a new View:-
+CREATE VIEW adempiere.chirag_test AS SELECT bp.name AS Customer_Name,inv.grandtotal AS Amonut 
+FROM adempiere.c_invoice inv 
+JOIN adempiere.c_bpartner bp ON bp.c_bpartner_id = inv.c_bpartner_id
+WHERE inv.ad_client_id = 1000002 AND inv.issotrx = 'Y'
+==================================================================================================================================================================
+Create a new View:;-
+
+CREATE VIEW adempiere.chirag_test AS SELECT * FROM adempiere.c_invoice (if you are not enter adempiere then create Public not a adempiere)
+
+==================================================================================================================================================================
+create Expiry report View:-
+
+CREATE VIEW adempiere.ch_Expirydetails AS 
+SELECT b.name AS Product_Name,
+a.expirydate as Expiry_Date,
+e.qtyonhand AS Quantity,
+att.lot AS Lot_No,
+wh.value AS Warehouse_Name,
+ll.value AS Locator_Name,
+f.ad_client_id,
+f.ad_org_id 
+FROM adempiere.c_orderline a
+JOIN adempiere.m_product b ON a.m_product_id = b.m_product_id 
+JOIN adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+JOIN adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
+JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
+WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE    
+
+==================================================================================================================================================================
+Create View some restriction Parameter:- like product,bpartnerand period 
+
+ SELECT il.ad_client_id,
+    il.ad_org_id,
+    il.c_bpartner_id,
+    il.m_product_id,
+    adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying) AS dateinvoiced,
+    sum(il.linenetamt) AS linenetamt,
+    sum(il.linelistamt) AS linelistamt,
+    sum(il.linelimitamt) AS linelimitamt,
+    sum(il.linediscountamt) AS linediscountamt,
+        CASE
+            WHEN sum(il.linelistamt) = 0::numeric THEN 0::numeric
+            ELSE adempiere.currencyround((sum(il.linelistamt) - sum(il.linenetamt)) / sum(il.linelistamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS linediscount,
+    sum(il.lineoverlimitamt) AS lineoverlimitamt,
+        CASE
+            WHEN sum(il.linenetamt) = 0::numeric THEN 0::numeric
+            ELSE 100::numeric - adempiere.currencyround((sum(il.linenetamt) - sum(il.lineoverlimitamt)) / sum(il.linenetamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS lineoverlimit,
+    sum(il.qtyinvoiced) AS qtyinvoiced,
+    il.issotrx
+   FROM adempiere.rv_c_invoiceline il
+     JOIN adempiere.c_invoice i ON i.c_invoice_id = il.c_invoice_id
+  GROUP BY il.ad_client_id, il.ad_org_id, il.m_product_id, il.c_bpartner_id, (adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying)), il.issotrx, i.c_currency_id;
 
 ==================================================================================================================================================================
 

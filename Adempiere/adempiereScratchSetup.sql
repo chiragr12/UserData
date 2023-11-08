@@ -68,12 +68,26 @@ Adempiere Setep:-
 
 3. Restore database :-
 	cd 
-	psql -U adempiere -d idempiere < /home/chirag/Downloads/ExpDat.dmp (requirement according change file path)
+	psql -U adempiere -d idempiere < /home/chirag/ExpDat.dmp (requirement according change file path)
 	(if any requirement give file executing permission)
 
+	psql -U adempiere -d idempiere6 < /home/chirag/Austrak.dmp (This code is also setup in Austrak)
 
 
 ==============================================================================================================================================================
+If you are another database your system:-
+#cd (home directory to create all functionality)
+#createdb  --template=template0 -E UNICODE -O adempiere -U adempiere idempiere2 (password of adempiere)(modify your database name)
+#psql -d idempiere2 -U adempiere -c "ALTER ROLE adempiere SET search_path TO adempiere, pg_catalog" (enter adempiere Password)
+#psql -U adempiere -d idempiere < /home/chirag/ExpDat.dmp (this folder path actual other wise not add data for yoyr database)
+
+==============================================================================================================================================================
+This code is use your Database complete backup
+pg_dump -U adempiere -W idempiere5 > /home/chirag/datas.sql(-w Without password and -W With Password)
+
+==============================================================================================================================================================
+
+
 Old Scratch Setup Throw Error :-
 
 -- 1. First cloning the adempiere project from Git
