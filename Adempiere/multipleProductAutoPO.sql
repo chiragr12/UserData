@@ -69,3 +69,9 @@ private MOrder createPOOrder() throws Exception {
     
     // Rest of the code...
 }
+
+// Retrieve the default organization ID
+int defaultOrgID = Env.getAD_Org_ID(getCtx());
+
+// Retrieve the default warehouse ID
+int defaultWarehouseID = Env.getContextAsInt(getCtx(), "#M_Warehouse_ID");

@@ -71,7 +71,7 @@ Adempiere Setep:-
 	psql -U adempiere -d idempiere < /home/chirag/ExpDat.dmp (requirement according change file path)
 	(if any requirement give file executing permission)
 
-	psql -U adempiere -d idempiere6 < /home/chirag/Austrak.dmp (This code is also setup in Austrak)
+	psql -U adempiere -d idempiere6 < /home/chirag/austrak_C.dmp (This code is also setup in Austrak)
 
 
 ==============================================================================================================================================================

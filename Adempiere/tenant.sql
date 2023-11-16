@@ -57,5 +57,9 @@ Tenant:-
 
 	    /home/ubuntu/WarePro/idempiere-server/data/import/AccountingDefaultsOnly.csv
 
+	    /home/ubuntu/WareProDemo/wms/idempiere-server-demo/data/import/AccountingDefaultsOnly.csv
+
+	    If CSv file is not working then Choosh auto csv file generate
+
 	    New Local path:-
 	    /home/chirag/newPipra/wms/idempiere-release-10/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv
