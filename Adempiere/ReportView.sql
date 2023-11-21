@@ -185,7 +185,135 @@ Some Restriction View created:-
 		Process :- (ex.- ta)
 		save
 
-		change Role and login for your Tenant and show your reports View		
+		change Role and login for your Tenant and show your reports View	
+
+
+===========================================================================================================================================================
+Create View Sales Representative and Product wise:-
+
+ CREATE VIEW adempiere.chMonthlySalesProduct AS
+ SELECT il.ad_client_id,
+    il.ad_org_id,
+    il.salesrep_id,
+    il.m_product_id,
+    adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying) AS dateinvoiced,
+    sum(il.linenetamt) AS linenetamt,
+    sum(il.linelistamt) AS linelistamt,
+    sum(il.linelimitamt) AS linelimitamt,
+    sum(il.linediscountamt) AS linediscountamt,
+        CASE
+            WHEN sum(il.linelistamt) = 0::numeric THEN 0::numeric
+            ELSE adempiere.currencyround((sum(il.linelistamt) - sum(il.linenetamt)) / sum(il.linelistamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS linediscount,
+    sum(il.lineoverlimitamt) AS lineoverlimitamt,
+        CASE
+            WHEN sum(il.linenetamt) = 0::numeric THEN 0::numeric
+            ELSE 100::numeric - adempiere.currencyround((sum(il.linenetamt) - sum(il.lineoverlimitamt)) / sum(il.linenetamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS lineoverlimit,
+    il.issotrx
+   FROM adempiere.rv_c_invoiceline il
+     JOIN adempiere.c_invoice i ON i.c_invoice_id = il.c_invoice_id
+  GROUP BY il.ad_client_id, il.ad_org_id, il.salesrep_id,il.m_product_id, (adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying)), il.issotrx, i.c_currency_id;
+
+  that above query easily created view
+
+  2.) Create a Table and Column :-
+	Login System Administrator and go to Table and Column window:-
+	create a new Table and Column click + symbol
+		Fill Required field for create a new records
+		DB Table Name :-
+		Name:- (ex.- chirag)
+		select view checkbox
+		unSelect Maintain Change Log checkbox
+		Data Access Level :- Client+Organization
+		Entity Type :- Dictionary
+		select Show in drill option checkbox
+		save and go to process button in middle top
+		Create Column for DB 
+		(All Cloumn is coming)
+		 Client_id , Org_id and IsSOTrx field only Mandatory 
+		 M_Product Updatable and SalesRep_ID not Updatable and not Mandatory
+
+
+  3.) go to report View Window in search tab 
+	  create a new Table and Column click + symbol
+		Fill Required field for create a new records
+		Name :- (Ex. - ra)
+		Entity Type :- Dictionary
+		Table:- enter above table name (ex.- chirag)
+		save	
+
+
+4.) go to Report and Process window in search tab
+	create a new Table and Column click + symbol
+		Fill Required field for create a new records
+		Search Key :-
+		Name:- (Ex.- ta)
+		Entity Type :- Dictionary
+		Multiple Execution :- Disallow multiple executions with the same parameters
+		Data Access Level :- Client + Organization
+		select Report checkbox
+		Report View :- 	(Ex. - ra)	
+		save 
+
+		Create a parameter it is very important:-
+
+		If created date field with Period:-
+		Name :-
+		DB Column Name :- table Column Name (DateInvoiced)
+		SystemKey:-
+		Reference :- date 
+		Select Range checkbox
+		Date Range Option:- Date Editor and Range Picker
+		PlaceHolder :- To
+		save
+
+		Sales Transation :- If only sales
+		Name :-
+		DB Column Name :- table Column Name (IsSOTrx)
+		SystemElement:- IsSOTrx
+		Reference :- Yes-No
+		Default Logic :- Y means only Sales Transation and N only Purchase Transation
+		Select Negate Button checkbox
+
+
+		Product:-
+		Name :- Product(any name)
+		DB Column Name :- table Column Name (M_Product_ID)
+		System Element:- M_Product_ID
+		Reference :- Chosen Multiple Selection Search
+		Reference key :- M_Product(no summary) (this is very important if choose any other then show wrong results)
+		Select Negate Button checkbox
+
+
+		Sales Representative:-
+		Name :- Sales Representative(any name)
+		DB Column Name :- table Column Name (SalesRep_ID)
+		System Element:- SalesRep_ID
+		Reference :- Chosen Multiple Selection Search
+		Reference Key :- AD_User - SalesRep
+		Select Negate Button checkbox
+
+
+		Parameter value provide is very important other wise you get wrong results
+
+
+5.) go to Menu window in search tab
+	create a new Table and Column click + symbol
+		Fill Required field for create a new records
+		Name :- 
+		Entity Type :- Dictionary
+		unSelect Sales Transation checkbox
+		Action :- report
+		Process :- (ex.- ta)
+		save
+
+		change Role and login for your Tenant and show your reports View
+
+
+
+
+
 
 
 

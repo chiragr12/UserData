@@ -1050,6 +1050,22 @@ Create View some restriction Parameter:- like product,bpartnerand period
   GROUP BY il.ad_client_id, il.ad_org_id, il.m_product_id, il.c_bpartner_id, (adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying)), il.issotrx, i.c_currency_id;
 
 ==================================================================================================================================================================
+Alter Storage il
+ALTER TABLE adempiere.M_Locator
+ADD COLUMN MaxQuantity NUMERIC;
 
+
+INSERT INTO adempiere.AD_Element (AD_Element_ID,ad_client_id,ad_org_id,isactive,createdby,updatedby,columnname,entitytype,name,printname,description,help)
+VALUES(532781,0,0,'Y',0,0,'MaxQuantity','D', 'Maximum Quantity','Maximum Quantity','','')
+
+select * from adempiere.ad_element where columnname = 'MaxQuantity'
+
+INSERT INTO adempiere.ad_column(ad_column_id,ad_client_id,ad_org_id,createdby,updatedby,name,version,entitytype,columnname,ad_table_id,ad_reference_id)
+VALUES (532781,0,0,0,0,'MaxQuantity',0,'D','MaxQuantity',207,20);
+
+INSERT INTO adempiere.ad_field(ad_field_id,ad_client_id,ad_org_id,createdby,updatedby,name,ad_tab_id,AD_Column_ID)
+VALUES(5327810,0,0,0,0,'MaxQuantity',178,532781);
+
+select * from adempiere.ad_field where ad_field_id = 5327810
 
 ==================================================================================================================================================================

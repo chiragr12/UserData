@@ -83,7 +83,7 @@ If you are another database your system:-
 
 ==============================================================================================================================================================
 This code is use your Database complete backup
-pg_dump -U adempiere -W idempiere5 > /home/chirag/datas.sql(-w Without password and -W With Password)
+pg_dump -U adempiere -W idempiere5 > /home/chirag/datas.dmp(-w Without password and -W With Password)
 
 ==============================================================================================================================================================
 
