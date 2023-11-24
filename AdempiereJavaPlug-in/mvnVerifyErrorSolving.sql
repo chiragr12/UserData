@@ -1,4 +1,4 @@
-mvn verify (idempiere-release-10) and throw below error
+Ques. mvn verify (idempiere-release-10) and throw below error
 
 [ERROR] Failed to resolve target definition file:/home/chirag/newPipra/wms/idempiere-release-10/org.idempiere.p2.targetplatform/org.idempiere.p2.targetplatform.target:
  MavenDependency GroupId = org.eclipse.jetty, ArtifactId = jetty-servlets, Version = 10.0.9, ArtifactType = jar, IncludeDependencyScope =  of 
@@ -47,4 +47,6 @@ rename file name if file name extention not show .pom
 Ques. If mvn clean install command is not working 
 
 Solution :- If that command is not working then you use mvn verify command in whole maven file like you run this command in idempiere-release-10 and 
-Its working properly and you show your jar file inside your maven file go to target and show your jar file, If any confusion check your jar file properties. 
+Its working properly and you show your jar file inside your maven file go to target and show your jar file, If any confusion check your jar file properties.
+
+=============================================================================================================================================================
