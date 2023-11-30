@@ -311,9 +311,57 @@ Create View Sales Representative and Product wise:-
 		change Role and login for your Tenant and show your reports View
 
 
+===========================================================================================================================================================
+Daily Bases Data :-
 
 
+ CREATE VIEW adempiere.chDailySalesProductAndBPartner AS
+ SELECT il.ad_client_id,
+    il.ad_org_id,
+    il.m_product_id,
+    il.c_bpartner_id,
+    adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'DD'::character varying) AS dateinvoiced,
+    sum(il.linenetamt) AS linenetamt,
+    sum(il.linelistamt) AS linelistamt,
+    sum(il.linelimitamt) AS linelimitamt,
+    sum(il.linediscountamt) AS linediscountamt,
+        CASE
+            WHEN sum(il.linelistamt) = 0::numeric THEN 0::numeric
+            ELSE adempiere.currencyround((sum(il.linelistamt) - sum(il.linenetamt)) / sum(il.linelistamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS linediscount,
+    sum(il.lineoverlimitamt) AS lineoverlimitamt,
+        CASE
+            WHEN sum(il.linenetamt) = 0::numeric THEN 0::numeric
+            ELSE 100::numeric - adempiere.currencyround((sum(il.linenetamt) - sum(il.lineoverlimitamt)) / sum(il.linenetamt) * 100::numeric, i.c_currency_id, 'N'::character varying)
+        END AS lineoverlimit,
+    il.issotrx
+   FROM adempiere.rv_c_invoiceline il
+     JOIN adempiere.c_invoice i ON i.c_invoice_id = il.c_invoice_id
+  GROUP BY il.ad_client_id, il.ad_org_id, il.m_product_id,il.c_bpartner_id, (adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'DD'::character varying)), il.issotrx, i.c_currency_id;
 
 
+===========================================================================================================================================================
 
 
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
+
+
+===========================================================================================================================================================
