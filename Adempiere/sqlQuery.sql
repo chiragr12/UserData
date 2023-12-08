@@ -1110,5 +1110,10 @@ WHERE table_name = 'm_inoutline' AND column_name = 'm_locator_id';
 
 ==================================================================================================================================================================
 
+SELECT * FROM adempiere.m_warehouse WHERE m_reservelocator_id = 1000386;
+UPDATE adempiere.m_warehouse SET m_reservelocator_id = null WHERE m_reservelocator_id = 1000386;
+DELETE FROM adempiere.m_locator WHERE m_locator_id = 1000386;
+DELETE FROM adempiere.m_warehouse WHERE m_warehouse_id = 1000019;
+
 
 ==================================================================================================================================================================

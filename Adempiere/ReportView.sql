@@ -18,7 +18,9 @@ JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m
 JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
 JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
 JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
-WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE
+WHERE f.issotrx = 'N' 
+AND e.qtyonhand != 0 --Empty qty product not show 
+AND a.expirydate < CURRENT_DATE
 
 (First you create a view working pgsql but adempiere application is not working
  If you add two field client and org then display you adempiere application)

@@ -14,3 +14,8 @@
 	ADEMPIERE_DB_NAME = "demo"(db_name also changes )
 	ADEMPIERE_WEB_PORT = "9090"
 	ADEMPIERE_SSL_PORT = "9091"
+
+Check log screen in server:-
+*cd /opt/idempiere-server/log/
+*ls
+*cat <last file name>
