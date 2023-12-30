@@ -63,3 +63,11 @@ Tenant:-
 
 	    New Local path:-
 	    /home/chirag/newPipra/wms/idempiere-release-10/org.adempiere.server-feature/data/import/AccountingDefaultsOnly.csv
+
+
+
+	    if server database changes:;-
+	    
+	    cd /opt/idempiere-server/
+    sudo nano idempiere.properties 
+    sudo nano idempiereEnv.properties

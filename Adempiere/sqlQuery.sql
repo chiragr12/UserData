@@ -1117,3 +1117,69 @@ DELETE FROM adempiere.m_warehouse WHERE m_warehouse_id = 1000019;
 
 
 ==================================================================================================================================================================
+ALTER TABLE adempiere.m_inout ADD COLUMN pickStatus VARCHAR(255);
+ALTER TABLE adempiere.c_order ADD COLUMN putStatus VARCHAR(255);
+
+==================================================================================================================================================================
+select i.c_bpartner_id,il.m_product_id,i.c_invoice_id,il.pricelist,il.qtyinvoiced,il.linenetamt from adempiere.c_invoice i
+join adempiere.c_invoiceline il on i.c_invoice_id = il.c_invoice_id
+where i.ad_client_id = 1000002 and i.issotrx = 'Y' 
+
+==================================================================================================================================================================
+sum and without sum product:-
+
+SELECT
+    c_bpartner_id,
+    clientName,
+    BPartnerName,
+    c_invoice_id,
+    date,
+    ProductName,
+    m_product_id,
+    pricelist,
+    qtyinvoiced AS IndividualQuantity,
+    linenetamt AS IndividualNetAmount,
+    SUM(qtyinvoiced) OVER(PARTITION BY c_bpartner_id, m_product_id) AS TotalQuantity,
+    SUM(linenetamt) OVER(PARTITION BY c_bpartner_id, m_product_id) AS TotalNetAmount
+FROM (
+    SELECT
+        i.c_bpartner_id,
+        bp.name AS BPartnerName,
+    cl.name as clientName,
+        i.c_invoice_id,
+        DATE(i.dateinvoiced) AS date,
+        pr.name AS ProductName,
+        il.m_product_id,
+        il.pricelist,
+        il.qtyinvoiced,
+        il.linenetamt
+    FROM
+        adempiere.c_invoice i
+    JOIN
+        adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    JOIN
+        adempiere.c_bpartner bp ON bp.c_bpartner_id = i.c_bpartner_id
+    JOIN
+        adempiere.m_product pr ON pr.m_product_id = il.m_product_id
+    join adempiere.ad_client cl on cl.ad_client_id = i.ad_client_id
+    WHERE
+        i.ad_client_id = 1000002
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced > '2023/12/24'
+        AND i.dateinvoiced < '2023/12/31'
+) AS subquery
+ORDER BY
+    c_bpartner_id,
+    m_product_id
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
