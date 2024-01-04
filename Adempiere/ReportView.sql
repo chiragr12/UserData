@@ -343,6 +343,35 @@ Daily Bases Data :-
 
 
 ===========================================================================================================================================================
+CREATE VIEW adempiere.NearExpiryProductLists AS
+SELECT
+    b.name AS product_name,
+    a.expirydate AS date,
+    e.qtyonhand AS expiryqty,
+    att.lot AS lot_no,
+    wh.value AS warehouse_name,
+    ll.value AS locator_name,
+    f.ad_client_id,
+    f.ad_org_id
+FROM
+    adempiere.c_orderline a
+JOIN
+    adempiere.m_product b ON a.m_product_id = b.m_product_id
+JOIN
+    adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+JOIN
+    adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN
+    adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN
+    adempiere.c_order f ON f.c_order_id = a.c_order_id
+JOIN
+    adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+JOIN
+    adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
+WHERE
+    f.issotrx = 'N'::bpchar
+    AND a.expirydate >= CURRENT_DATE;
 
 
 ===========================================================================================================================================================

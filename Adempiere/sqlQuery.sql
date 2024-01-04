@@ -1174,10 +1174,211 @@ ORDER BY
 
 
 ==================================================================================================================================================================
+Delete Warehouse id if locator is empty:-
+DELETE FROM adempiere.M_Warehouse WHERE M_Warehouse_ID = 1000027;
 
 
 ==================================================================================================================================================================
 
+SELECT
+    p.m_product_id,
+    p.name AS product_name,
+    pc.name AS category_name
+FROM
+    adempiere.m_product p
+JOIN
+    adempiere.m_product_category pc ON p.m_product_category_id = pc.m_product_category_id
+WHERE
+    p.ad_client_id = 1000002 pc.m_product_category_id = your_category_id;
+    
+    
+    SELECT
+    i.c_invoice_id,
+    i.documentno AS invoice_number,
+    p.name AS product_name,
+    il.qtyinvoiced AS quantity,
+    il.linenetamt AS total_amount
+FROM
+    adempiere.c_invoice i
+JOIN
+    adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+JOIN
+    adempiere.m_product p ON il.m_product_id = p.m_product_id
+JOIN
+    adempiere.m_product_category pc ON p.m_product_category_id = pc.m_product_category_id
+WHERE
+    i.issotrx = 'Y' -- Assuming only sales invoices are considered
+    AND p.ad_client_id = 1000002 pc.m_product_category_id = your_category_id;
+
+
+SELECT
+    i.c_invoice_id,
+    i.documentno AS invoice_number,
+    p.name AS product_name,
+    il.qtyinvoiced AS quantity,
+    il.linenetamt AS net_amount,
+    br.name AS sales_representative
+FROM
+    adempiere.c_invoice i
+JOIN
+    adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+JOIN
+    adempiere.m_product p ON il.m_product_id = p.m_product_id
+JOIN
+    adempiere.c_bpartner br ON i.salesrep_id = br.c_bpartner_id -- Assuming sales representative information is in C_BPartner table
+WHERE
+    i.issotrx = 'Y'  AND p.ad_client_id = 1000002 -- Assuming only sales invoices are considered
+    AND i.salesrep_id = your_sales_representative_id;
+
+
+==================================================================================================================================================================
+WITH InvoiceLineTotals AS (
+    SELECT
+        il.m_product_id,
+        SUM(il.qtyinvoiced) AS TotalQty,
+        SUM(il.linenetamt) AS TotalNetAmount,
+        il.priceactual
+    FROM
+        adempiere.c_invoice i
+    JOIN
+        adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    WHERE
+        i.ad_client_id = 1000002 AND
+        i.issotrx = 'Y'
+    GROUP BY
+        il.m_product_id,il.priceactual
+),
+StorageOnHandTotals AS (
+    SELECT
+        m_product_id,
+        SUM(qtyonhand) AS AvailableQty
+    FROM
+        adempiere.m_storageonhand
+    GROUP BY
+        m_product_id
+)
+SELECT
+    pr.name AS ProductName,
+    COALESCE(i.TotalQty, 0) AS TotalQty,
+    COALESCE(i.TotalNetAmount, 0) AS TotalNetAmount,
+    COALESCE(s.AvailableQty, 0) AS AQty,
+    i.priceactual*s.AvailableQty AS AValue
+FROM
+    adempiere.m_product pr
+LEFT JOIN
+    InvoiceLineTotals i ON pr.m_product_id = i.m_product_id
+LEFT JOIN
+    StorageOnHandTotals s ON pr.m_product_id = s.m_product_id
+    where pr.ad_client_id = 1000002
+ORDER BY
+    pr.name;
+
+==================================================================================================================================================================
+SHOW PRODUCT LIST SALES AND AVAILABLE QTY:-
+
+WITH InvoiceLineTotals AS (
+SELECT il.m_product_id,SUM(il.qtyinvoiced) AS TotalQty,
+SUM(il.linenetamt) AS TotalNetAmount FROM adempiere.c_invoice i
+JOIN adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+WHERE i.ad_client_id =  1000002  AND i.issotrx = 'Y' ANd i.dateinvoiced > '01/11/2023' AND
+i.dateinvoiced < '05/12/2023' GROUP BY il.m_product_id),
+StorageOnHandTotals AS (
+SELECT m_product_id,SUM(qtyonhand) AS AvailableQty
+FROM adempiere.m_storageonhand WHERE Date(datematerialpolicy) < '04/12/2023' GROUP BY m_product_id),
+BasePrice AS (
+SELECT ol.m_product_id, MAX(ol.pricelimit) AS MaxPriceLimit
+FROM adempiere.c_orderline ol
+JOIN adempiere.c_order o ON o.c_order_id = ol.c_order_id
+WHERE ol.ad_client_id =  1000002  AND o.issotrx = 'N'
+GROUP BY m_product_id)
+SELECT pr.name AS ProductName,COALESCE(i.TotalQty, 0) AS TotalQty,
+ROUND(COALESCE(i.TotalNetAmount, 0),2) AS TotalNetAmount,
+Round(COALESCE(s.AvailableQty, 0),0) AS AQty,cl.name As ClientName,
+ROUND(COALESCE(b.MaxPriceLimit * s.AvailableQty, 0), 2) AS AValue
+FROM adempiere.m_product pr
+LEFT JOIN InvoiceLineTotals i ON pr.m_product_id = i.m_product_id
+LEFT JOIN StorageOnHandTotals s ON pr.m_product_id = s.m_product_id
+LEFT JOIN BasePrice b ON pr.m_product_id = b.m_product_id
+join adempiere.ad_client cl on cl.ad_client_id = pr.ad_client_id
+WHERE pr.ad_client_id =  1000002 ORDER BY pr.name
+
+==================================================================================================================================================================
+SALES $ STOCK ANALYSIS:-
+
+WITH InvoiceLineTotals AS (
+    SELECT
+        il.m_product_id,
+        SUM(il.qtyinvoiced) AS TotalQty,
+        SUM(il.linenetamt) AS TotalNetAmount
+    FROM
+        adempiere.c_invoice i
+        JOIN adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    WHERE
+        i.ad_client_id = 1000002
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced >  $P{FromDate} 
+        AND i.dateinvoiced <  $P{ToDate} 
+    GROUP BY
+        il.m_product_id
+),
+StorageOnHandTotals AS (
+    SELECT
+        m_product_id,
+        SUM(qtyonhand) AS AvailableQty
+    FROM
+        adempiere.m_storageonhand
+    WHERE
+        DATE(datematerialpolicy) <  $P{ToDate} 
+    GROUP BY
+        m_product_id
+),
+BasePrice AS (
+    SELECT
+        ol.m_product_id,
+        MAX(ol.pricelimit) AS MaxPriceLimit
+    FROM
+        adempiere.c_orderline ol
+        JOIN adempiere.c_order o ON o.c_order_id = ol.c_order_id
+    WHERE
+        ol.ad_client_id = 1000002
+        AND o.issotrx = 'N'
+    GROUP BY
+        m_product_id
+),
+PreviousMonth AS (
+    SELECT
+        il.m_product_id,
+        SUM(il.qtyinvoiced) AS TotalPQty
+    FROM
+        adempiere.c_invoice i
+        JOIN adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    WHERE
+        i.ad_client_id = 1000002
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced >  $P{FromDate} ::DATE  -  INTERVAL '30 days'
+        AND i.dateinvoiced <  $P{ToDate} ::DATE -  INTERVAL '30 days'
+    GROUP BY
+        il.m_product_id
+)
+SELECT
+    pr.name AS ProductName,
+    COALESCE(i.TotalQty, 0) AS TotalQty,
+    ROUND(COALESCE(i.TotalNetAmount, 0), 2) AS TotalNetAmount,
+    ROUND(COALESCE(s.AvailableQty, 0), 0) AS AQty,
+    cl.name AS ClientName,
+    ROUND(COALESCE(b.MaxPriceLimit * s.AvailableQty, 0), 2) AS AValue,
+    ROUND(COALESCE(pp.TotalPQty, 0), 0) AS PQty
+FROM
+    adempiere.m_product pr
+    LEFT JOIN InvoiceLineTotals i ON pr.m_product_id = i.m_product_id
+    LEFT JOIN StorageOnHandTotals s ON pr.m_product_id = s.m_product_id
+    LEFT JOIN BasePrice b ON pr.m_product_id = b.m_product_id
+    LEFT JOIN PreviousMonth pp ON pr.m_product_id = pp.m_product_id
+    JOIN adempiere.ad_client cl ON cl.ad_client_id = pr.ad_client_id
+WHERE
+    pr.ad_client_id = 1000002
+ORDER BY
+    pr.name
 
 ==================================================================================================================================================================
 

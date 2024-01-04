@@ -19,7 +19,7 @@
 	* psql -d erp -U adempiere -c "ALTER ROLE adempiere SET search_path TO adempiere, pg_catalog"	
 14. Added dmp file in your local
     local commands:-
-    	* scp -i /home/chirag/pemFile/democ.pem /home/chirag/austrak_C.dmp ubuntu@3.110.80.36:/home/
+    	* scp -i /home/chirag/pemFile/democ.pem /home/chirag/austrak_C.dmp ubuntu@3.110.80.36:/home/ubuntu/
 15 ls and see the file location and use this file added requirement database
 		*  psql -U adempiere -d erp < /home/chirag/austrak_C.dmp (see file location)
 		this command use whole data is came our database
