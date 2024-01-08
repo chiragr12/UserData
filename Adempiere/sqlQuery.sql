@@ -1381,6 +1381,200 @@ ORDER BY
     pr.name
 
 ==================================================================================================================================================================
+Current Date in Web Application :- @#Date@
+Createing Date in Web Application for any table :- @SQL=SELECT created FROM adempiere.c_invoice WHERE issotrx='Y' AND AD_CLIENT_ID =@#AD_Client_ID@ limit 1
+
+==================================================================================================================================================================
+JasperReport view for bPartner wise sales Reports:-
+
+select i.dateinvoiced, uo.name,i.c_invoice_id,i.c_bpartner_id,ac.name as clientName,i.c_invoice_id As InvoiceId,bp.name AS BPartnerName,pr.name AS ProductName,il.m_product_id,il.pricelist,il.qtyinvoiced,il.linenetamt from adempiere.c_invoice i
+join adempiere.c_invoiceline il on i.c_invoice_id = il.c_invoice_id
+join adempiere.c_bpartner bp on bp.c_bpartner_id = i.c_bpartner_id
+join adempiere.m_product pr on pr.m_product_id = il.m_product_id 
+join adempiere.ad_client ac on ac.ad_client_id = i.ad_client_id
+join adempiere.c_uom uo on uo.c_uom_id = il.c_uom_id
+where i.ad_client_id =  $P{AD_CLIENT_ID}  and i.dateinvoiced >  $P{FromDate} and i.dateinvoiced <   $P{ToDate} and i.issotrx = 'Y' order by c_bpartner_id, m_product_id
+
+==================================================================================================================================================================
+Baprtner wise sales Reports with date and invoices:-
+
+SELECT
+    c_bpartner_id,
+    clientName,
+    BPartnerName,
+    c_invoice_id,
+    date,
+    ProductName,
+    m_product_id,
+    pricelist,
+    qtyinvoiced AS IndividualQuantity,
+    linenetamt AS IndividualNetAmount,
+    SUM(qtyinvoiced) OVER(PARTITION BY c_bpartner_id, m_product_id) AS TotalQuantity,
+    SUM(linenetamt) OVER(PARTITION BY c_bpartner_id, m_product_id) AS TotalNetAmount
+FROM (
+    SELECT
+        i.c_bpartner_id,
+        bp.name AS BPartnerName,
+    cl.name as clientName,
+        i.c_invoice_id,
+        DATE(i.dateinvoiced) AS date,
+        pr.name AS ProductName,
+        il.m_product_id,
+        il.pricelist,
+        il.qtyinvoiced,
+        il.linenetamt
+    FROM
+        adempiere.c_invoice i
+    JOIN
+        adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    JOIN
+        adempiere.c_bpartner bp ON bp.c_bpartner_id = i.c_bpartner_id
+    JOIN
+        adempiere.m_product pr ON pr.m_product_id = il.m_product_id
+    join adempiere.ad_client cl on cl.ad_client_id = i.ad_client_id
+    WHERE
+        i.ad_client_id =    $P{AD_CLIENT_ID} 
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced >   $P{FromDate}    
+        AND i.dateinvoiced <   $P{ToDate} 
+         AND (
+        $P{BPartnerId} IS NULL OR
+        i.c_bpartner_id = $P{BPartnerId}
+    )   
+) AS subquery
+ORDER BY
+    c_bpartner_id,
+    m_product_id
+
+==================================================================================================================================================================
+Sales Representative wise Sales report but this query is working not salesRepid parameter wise show every time all records:-
+
+SELECT 
+    i.documentno AS invoice_number,
+    bp.name AS Customer,
+    br.ad_user_id,
+    i.c_bpartner_id,
+    i.salesrep_id,
+    il.m_product_id,
+    ad.name AS clientName,
+    p.name AS productName,
+    il.qtyinvoiced AS quantity,
+    il.linenetamt AS netAmt,
+    br.name AS SalesRep,
+    i.dateinvoiced 
+FROM 
+    adempiere.c_invoice i
+JOIN 
+    adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+JOIN 
+    adempiere.m_product p ON il.m_product_id = p.m_product_id
+JOIN 
+    adempiere.ad_user br ON i.salesrep_id = br.ad_user_id 
+JOIN 
+    adempiere.c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
+JOIN 
+    adempiere.ad_client ad ON ad.ad_client_id = i.ad_client_id
+WHERE 
+    i.issotrx = 'Y'  
+    AND p.ad_client_id = $P{AD_CLIENT_ID}  
+    AND i.dateinvoiced > $P{FromDate}     
+    AND i.dateinvoiced < $P{ToDate}  
+    AND (
+        $P{SalesRepId} IS NULL OR br.ad_user_id = $P{SalesRepId}
+    )
+ORDER BY 
+    i.salesrep_id, i.c_bpartner_id
+
+==================================================================================================================================================================
+Slaes & Stock Analysis with PreviousMonth sales qty details:-
+
+WITH InvoiceLineTotals AS (
+    SELECT
+        il.m_product_id,
+        SUM(il.qtyinvoiced) AS TotalQty,
+        SUM(il.linenetamt) AS TotalNetAmount
+    FROM
+        adempiere.c_invoice i
+        JOIN adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    WHERE
+        i.ad_client_id =  $P{AD_CLIENT_ID} 
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced >  $P{FromDate} 
+        AND i.dateinvoiced <  $P{ToDate} 
+    GROUP BY
+        il.m_product_id
+),
+StorageOnHandTotals AS (
+    SELECT
+        m_product_id,
+        SUM(qtyonhand) AS AvailableQty
+    FROM
+        adempiere.m_storageonhand
+    WHERE
+        DATE(datematerialpolicy) <  $P{ToDate} 
+    GROUP BY
+        m_product_id
+),
+BasePrice AS (
+    SELECT
+        ol.m_product_id,
+        MAX(ol.pricelimit) AS MaxPriceLimit
+    FROM
+        adempiere.c_orderline ol
+        JOIN adempiere.c_order o ON o.c_order_id = ol.c_order_id
+    WHERE
+        ol.ad_client_id =  $P{AD_CLIENT_ID} 
+        AND o.issotrx = 'N'
+    GROUP BY
+        m_product_id
+),
+PreviousMonth AS (
+    SELECT
+        il.m_product_id,
+        SUM(il.qtyinvoiced) AS TotalPQty
+    FROM
+        adempiere.c_invoice i
+        JOIN adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
+    WHERE
+        i.ad_client_id =  $P{AD_CLIENT_ID} 
+        AND i.issotrx = 'Y'
+        AND i.dateinvoiced >  $P{FromDate} ::DATE  -  INTERVAL '30 days'
+        AND i.dateinvoiced <  $P{ToDate} ::DATE -  INTERVAL '30 days'
+    GROUP BY
+        il.m_product_id
+)
+SELECT
+    pr.name AS ProductName,pr.m_product_id,
+    COALESCE(i.TotalQty, 0) AS TotalQty,
+    ROUND(COALESCE(i.TotalNetAmount, 0), 2) AS TotalNetAmount,
+    ROUND(COALESCE(s.AvailableQty, 0), 0) AS AQty,
+    cl.name AS ClientName,
+    ROUND(COALESCE(b.MaxPriceLimit * s.AvailableQty, 0), 2) AS AValue,
+    ROUND(COALESCE(pp.TotalPQty, 0), 0) AS PQty
+FROM
+    adempiere.m_product pr
+    LEFT JOIN InvoiceLineTotals i ON pr.m_product_id = i.m_product_id
+    LEFT JOIN StorageOnHandTotals s ON pr.m_product_id = s.m_product_id
+    LEFT JOIN BasePrice b ON pr.m_product_id = b.m_product_id
+    LEFT JOIN PreviousMonth pp ON pr.m_product_id = pp.m_product_id
+    JOIN adempiere.ad_client cl ON cl.ad_client_id = pr.ad_client_id
+WHERE
+    pr.ad_client_id =  $P{AD_CLIENT_ID} 
+    AND ($P{ProductId} IS NULL OR
+ pr.m_product_id = $P{ProductId})
+ORDER BY
+    pr.name
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
