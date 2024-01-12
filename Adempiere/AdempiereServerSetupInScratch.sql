@@ -45,6 +45,8 @@
 		   * nano idempiereEnv.properties {change db name if required}
 		   * nano idempiere.properties {change db name if required}
 		* sudo dpkg -i idempiereServer10Daily.gtk.linux.x86_64.deb
+
+		cd /opt/idempiere-server/
 		* restart the Server :-
 			* sudo service idempiere stop
    			* sudo service idempiere start
