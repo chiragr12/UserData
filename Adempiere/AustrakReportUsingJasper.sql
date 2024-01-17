@@ -54,7 +54,14 @@ order by c_bpartner_id, m_product_id
 		</conditionalStyle>
 	</style>
 
-	and which field you need alternate color then choose field style name Name.
+	and which field you need alternate color then choose field style name 
+
+6. PDF to HTML place chnage problem:-
+
+Solution:- This problem only one solution not provide any space or tab you provide differenr static tab created and provude actual looking
+			you see your problem is solve.
+
+
 
 
 	
