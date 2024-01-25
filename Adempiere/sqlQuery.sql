@@ -1608,7 +1608,219 @@ CREATE VIEW adempiere.ExpiryProductDetails AS
      JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
      JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
   WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE;
-  
+
+==================================================================================================================================================================
+Transaction dashboard:-
+
+sql = "SELECT COUNT(DISTINCT mi) AS inoutCount,\n"
+                        + "(SELECT COUNT(a) FROM adempiere.m_inout a WHERE a.movementtype = 'V+' AND DATE(a.created) = DATE(NOW())) AS inCount,\n"
+                        + "(SELECT COUNT(b) FROM adempiere.m_inout b WHERE b.movementtype = 'C-' AND DATE(b.created) = DATE(NOW())) AS outCount,\n"
+                        + "(SELECT COUNT(DISTINCT c) FROM adempiere.m_movement c WHERE DATE(c.created) = DATE(NOW()) AND c.m_warehouse_id = c.m_warehouseto_id) AS internalMoveCount, \n"
+                        + "(SELECT COUNT(d) FROM adempiere.m_inoutlineconfirm d WHERE qcfailedqty != 0.00 AND DATE(d.created) = DATE(NOW())) AS qc\n"
+                        + "FROM adempiere.m_inout mi WHERE DATE(mi.created) = DATE(NOW()) AND mi.ad_client_id = "+ clientId +";";
+            } else if (wareHouseId != 0 && productId == 0) {
+                sql = "SELECT COUNT(DISTINCT mi) AS inoutCount,\n"
+                        + "(SELECT COUNT(a) FROM adempiere.m_inout a WHERE a.movementtype = 'V+' AND a.m_warehouse_id = "+ wareHouseId +" AND DATE(a.created) = DATE(NOW())) AS inCount,\n"
+                        + "(SELECT COUNT(b) FROM adempiere.m_inout b WHERE b.movementtype = 'C-' AND b.m_warehouse_id = "+ wareHouseId +" AND DATE(b.created) = DATE(NOW())) AS outCount,\n"
+                        + "(SELECT COUNT(DISTINCT c) FROM adempiere.m_movement c WHERE DATE(c.created) = DATE(NOW()) AND c.m_warehouse_id = "+ wareHouseId +") AS internalMoveCount, \n"
+                        + "(SELECT COUNT(d) FROM adempiere.m_inoutlineconfirm d JOIN adempiere.m_inoutline ili ON ili.m_inoutline_id = c.m_inoutline_id JOIN adempiere.m_inout ii ON ii.m_inout_id = ili.m_inout_id\n"
+                        + "JOIN adempiere.m_warehouse whh ON whh.m_warehouse_id = ii.m_warehouse_id WHERE qcfailedqty != 0.00 AND whh.m_warehouse_id = "+ wareHouseId +" AND DATE(d.created) = DATE(NOW())) AS qc\n"
+                        + "FROM adempiere.m_inout mi WHERE DATE(mi.created) = DATE(NOW()) AND mi.m_warehouse_id = "+ wareHouseId +" AND mi.ad_client_id = "+ clientId +";";
+            } else if (wareHouseId == 0 && productId != 0) {
+                sql = "SELECT COUNT(DISTINCT mi) as inoutCount,\n"
+                        + "(SELECT COUNT(a) FROM m_inout a JOIN m_inoutline aa ON aa.m_inout_id = a.m_inout_id WHERE a.movementtype = 'V+' AND aa.M_product_id = "+productId+" AND DATE(a.created) = DATE(NOW())) as inCount,\n"
+                        + "(SELECT COUNT(a) FROM m_inout a JOIN m_inoutline aa ON aa.m_inout_id = a.m_inout_id WHERE a.movementtype = 'C-' AND aa.m_product_id = "+productId+" AND DATE(a.created) = DATE(NOW())) as outCount,\n"
+                        + "(SELECT COUNT(DISTINCT c) FROM m_movement c JOIN m_movementline cc ON cc.m_movement_id = c.m_movement_id WHERE DATE(c.created) = DATE(NOW()) AND cc.m_product_id = "+productId+") as internalMoveCount,\n"
+                        + "(SELECT COUNT(d) FROM adempiere.m_inoutlineconfirm d JOIN adempiere.m_inoutline ili ON ili.m_inoutline_id = c.m_inoutline_id JOIN adempiere.m_inout ii ON ii.m_inout_id = ili.m_inout_id\n"
+                        + "JOIN adempiere.m_product wh ON wh.m_product_id = ili.m_product_id WHERE qcfailedqty != 0.00 AND wh.m_product_id = "+productId+" AND DATE(d.created) = DATE(NOW())) AS qc\n"
+                        + "FROM m_inout mi JOIN m_inoutline mil ON mil.m_inout_id = mi.m_inout_id WHERE DATE(mi.created) = DATE(NOW()) AND mi.ad_client_id = "+clientId+" AND mil.m_product_id = "+productId+";";
+            }
+            pstmt = DB.prepareStatement(sql.toString(), null);
+            RS = pstmt.executeQuery();
+            while (RS.next()) {
+                inoutCount = RS.getString("inoutCount");
+                inCount = RS.getString("inCount");
+                outCount = RS.getString("outCount");
+                internalMoveCount = RS.getString("internalMoveCount");
+                qaRejections = RS.getString("qc");
+            }
+
+==================================================================================================================================================================
+ReturnQty and allQty query:-
+
+SELECT SUM(movementqty) AS AllQty,(SELECT SUM(movementqty) AS returnQty FROM adempiere.m_inout i JOIN adempiere.m_inoutline li ON li.m_inout_id = i.m_inout_id WHERE i.ad_client_id = 1000002 AND i.movementtype = 'C+')
+FROM adempiere.m_inout i JOIN adempiere.m_inoutline li ON li.m_inout_id = i.m_inout_id WHERE i.ad_client_id = 1000002 AND i.movementtype = 'C-'
+
+==================================================================================================================================================================
+Return dashboard:-
+
+String sql = null;
+            String returnPendingSql = null;
+            if (wareHouseId == 0 && productId == 0) {
+                sql = "SELECT SUM(DISTINCT(movementqty))AS salesQty,SUM(DISTINCT(qtydelivered)) AS returnQty FROM adempiere.m_rma rm\n"
+                        + "JOIN adempiere.m_inout ii ON ii.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_inoutline ili ON ili.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_rmaline rmli ON rmli.m_rma_id = rm.m_rma_id\n"
+                        + "WHERE rm.ad_client_id = " + clientId + ";";
+                
+                returnPendingSql = "SELECT count(docStatus) from m_inout mi \n"
+                        + "join c_docType cd on cd.c_docType_Id = mi.c_docType_Id\n"
+                        + "where cd.name = 'MM Customer Return' and mi.docstatus = 'DR' and mi.ad_client_id=" + clientId
+                        + ";";
+            } else if (wareHouseId != 0 && productId == 0) {
+                sql = "SELECT SUM(DISTINCT(movementqty))AS salesQty,SUM(DISTINCT(qtydelivered)) AS returnQty FROM adempiere.m_rma rm\n"
+                        + "JOIN adempiere.m_inout ii ON ii.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_inoutline ili ON ili.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_rmaline rmli ON rmli.m_rma_id = rm.m_rma_id\n"
+                        + "JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = ii.m_warehouse_id\n"
+                        + "WHERE ii.m_warehouse_id = "+ wareHouseId +" AND rm.ad_client_id = "+ clientId +";";
+
+                returnPendingSql = "SELECT count(docStatus) from m_inout mi \n"
+                        + "join c_docType cd on cd.c_docType_Id = mi.c_docType_Id\n"
+                        + "where cd.name = 'MM Customer Return' and mi.docstatus = 'DR' and mi.ad_client_id=" + clientId
+                        + " and mi.m_warehouse_id =" + wareHouseId + ";";
+            } else if (wareHouseId == 0 && productId != 0) {
+                sql = "SELECT SUM(DISTINCT(movementqty))AS salesQty,SUM(DISTINCT rmli.qtydelivered) AS returnQty FROM adempiere.m_rma rm\n"
+                        + "JOIN adempiere.m_inout ii ON ii.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_inoutline ili ON ili.m_inout_id = rm.inout_id\n"
+                        + "JOIN adempiere.m_rmaline rmli ON rmli.m_rma_id = rm.m_rma_id\n"
+                        + "JOIN adempiere.m_product pd ON pd.m_product_id = rmli.m_product_id\n"
+                        + "WHERE rm.ad_client_id = "+ clientId +" and rmli.m_product_id = "+ productId +"";
+
+                returnPendingSql = "SELECT count(docStatus) from m_inout mi \n"
+                        + "join c_docType cd on cd.c_docType_Id = mi.c_docType_Id\n"
+                        + "join m_inoutline ml on ml.m_inout_id = mi.m_inout_id\n"
+                        + "where cd.name = 'MM Customer Return' and mi.docstatus = 'DR' and mi.ad_client_id=" + clientId
+                        + " and ml.m_product_id =" + productId + ";";
+            }
+
+==================================================================================================================================================================
+
+CREATE VIEW adempiere.salesinvoicess AS
+SELECT
+    iv.c_order_id,
+    iv.documentno AS Order_No,
+    TO_CHAR(iv.DateOrdered, 'DD-Mon-YYYY') AS Date_Ordered,
+    org.name AS OrgName,
+    org_loc.address AS org_address,
+    org_loc.city AS org_city,
+    org_loc.regionname AS org_regionname,
+    org_loc.countryname AS org_countryname,
+    org_loc.postal AS org_postal,
+    bp_loc.address AS bp_address,
+    bp_loc.city AS bp_city,
+    bp_loc.regionname AS bp_regionname,
+    bp_loc.countryname AS bp_countryname,
+    bp_loc.postal AS bp_postal,
+    CASE
+        WHEN ivl.m_product_id > 0 THEN mp.name
+        ELSE cha.name
+    END AS item,
+    iv.totallines AS SubTotal,
+    iv.grandtotal AS Total_Amount,
+    (iv.grandtotal - iv.totallines) AS Tax_Amount,
+    ivl.line AS Product_SNo,
+    mp.name AS Product_Name,
+    ivl.qtyordered AS Product_Qty_Invoiced,
+    ROUND(ivl.priceentered, 2) AS Product_Price_Entered,
+    cr.iso_code AS Product_Currency_Name,
+    tax.name AS Product_Tax_Name,
+    tax.rate AS Product_Tax_Rate,
+    CASE
+        WHEN tax.rate = 0.00 THEN 0.00
+        ELSE (ivl.linenetamt * tax.rate / 100)
+    END AS Product_Tax_Amount,
+    mp.hsncode AS Product_HSN,
+    ivl.linenetamt AS Product_Line_Amount,
+    bp.name AS customer_name,
+    adempiere.fnNumberToWords(iv.grandtotal::BIGINT) AS AmountInWord,
+    cr.description AS currency_name,
+    orginfo.phone,
+    cli.gstno AS client_gstno,
+    cli.panno AS client_panno,
+    bp.gstno AS bp_gstno,
+    bp.panno AS bp_panno,
+    cr.cursymbol,
+    cli.Name AS CompanyName
+FROM adempiere.c_order iv
+INNER JOIN adempiere.c_orderline ivl ON (iv.c_order_id = ivl.c_order_id)
+LEFT JOIN adempiere.ad_image img ON (ivl.image_id = img.ad_image_id)
+INNER JOIN adempiere.c_bpartner bp ON (bp.c_bpartner_id = iv.c_bpartner_id)
+INNER JOIN adempiere.ad_client cli ON (cli.ad_client_id = iv.ad_client_id)
+INNER JOIN adempiere.ad_org org ON (org.AD_Org_ID = iv.AD_Org_ID)
+INNER JOIN adempiere.ad_orginfo orginfo ON (orginfo.AD_Org_ID = iv.AD_Org_ID)
+LEFT JOIN adempiere.ad_image org_img ON (orginfo.Logo_ID = org_img.ad_image_id)
+INNER JOIN adempiere.location_details org_loc ON (org_loc.c_location_id = orginfo.c_location_id)
+INNER JOIN adempiere.c_bpartner_location bpl ON (bpl.c_bpartner_location_id = iv.c_bpartner_location_id)
+INNER JOIN adempiere.m_warehouse wh ON (wh.m_warehouse_id = iv.m_warehouse_id)
+INNER JOIN adempiere.location_details ware_loc ON (ware_loc.c_location_id = wh.c_location_id)
+INNER JOIN adempiere.location_details bp_loc ON (bp_loc.c_location_id = bpl.c_location_id)
+LEFT JOIN adempiere.m_product mp ON (mp.m_product_id = ivl.m_product_id)
+LEFT JOIN adempiere.c_charge cha ON (cha.c_charge_id = ivl.c_charge_id)
+INNER JOIN adempiere.c_uom uom ON (uom.c_uom_id = ivl.c_uom_id)
+INNER JOIN adempiere.c_tax tax ON (tax.c_tax_id = ivl.c_tax_id)
+INNER JOIN adempiere.c_currency cr ON (cr.c_currency_id = iv.c_currency_id)
+ORDER BY ivl.line;
+
+
+
+
+==================================================================================================================================================================
+Jasper Report for if condtion:-
+$F{city}==null ? '-' : $F{city} 
+
+
+
+==================================================================================================================================================================
+Material receipt Reports:-
+
+SELECT i.documentno, i.movementdate, b.name as bpname, b.value as bpvalue, loc.address1,loc.address2, loc.postal, loc.city, c.name as country,ili.qcfailedqty,ili.line,orginfo.phone, orginfo.fax, orginfo.email, orgloc.address1 as orgaddress, orgloc.city as orgcity, orgloc.postal as orgpostal, org.name as orgname, img.binarydata as orglogo,cor.documentno AS SalesOrderNo,wh.name AS warehouseName from adempiere.m_inout i 
+join adempiere.c_bpartner b on b.c_bpartner_id=i.c_bpartner_id
+join adempiere.c_bpartner_location bploc on bploc.c_bpartner_location_id=i.c_bpartner_location_id
+join adempiere.c_location loc on loc.c_location_id=bploc.c_location_id
+join adempiere.c_country c on c.c_country_id=loc.c_country_id
+join adempiere.ad_orginfo orginfo on orginfo.ad_org_id=i.ad_org_id
+join adempiere.c_location orgloc on orgloc.c_location_id=orginfo.c_location_id
+join adempiere.ad_org org on org.ad_org_id=i.ad_org_id
+left join adempiere.ad_image img on img.ad_image_id =orginfo.logo_id
+join adempiere.c_order cor ON cor.c_order_id = i.c_order_id 
+join adempiere.m_warehouse wh ON wh.m_warehouse_id = i.m_warehouse_id
+join adempiere.m_inoutline ili ON ili.m_inout_id = i.m_inout_id
+where i.m_inout_id=1000280
+
+
+select ili.line as pos, ili.movementqty,ili.qcfailedqty,pr.name as product from adempiere.m_inoutline ili
+join adempiere.m_product pr on pr.m_product_id = ili.m_product_id
+where ili.m_inout_id= 1000280
+ORDER BY ili.line
+
+select * from adempiere.m_inoutline
+
+SELECT i.documentno, i.movementdate, b.name as bpname, b.value as bpvalue, loc.address1,loc.address2, loc.postal, loc.city, c.name as country,ili.qcfailedqty,ili.line,orginfo.phone, orginfo.fax, orginfo.email, orgloc.address1 as orgaddress, orgloc.city as orgcity, orgloc.postal as orgpostal, org.name as orgname, img.binarydata as orglogo,cor.documentno AS SalesOrderNo,wh.name AS warehouseName from adempiere.m_inout i 
+join adempiere.c_bpartner b on b.c_bpartner_id=i.c_bpartner_id
+join adempiere.c_bpartner_location bploc on bploc.c_bpartner_location_id=i.c_bpartner_location_id
+join adempiere.c_location loc on loc.c_location_id=bploc.c_location_id
+join adempiere.c_country c on c.c_country_id=loc.c_country_id
+join adempiere.ad_orginfo orginfo on orginfo.ad_org_id=i.ad_org_id
+join adempiere.c_location orgloc on orgloc.c_location_id=orginfo.c_location_id
+join adempiere.ad_org org on org.ad_org_id=i.ad_org_id
+left join adempiere.ad_image img on img.ad_image_id =orginfo.logo_id
+join adempiere.c_order cor ON cor.c_order_id = i.c_order_id 
+join adempiere.m_warehouse wh ON wh.m_warehouse_id = i.m_warehouse_id
+join adempiere.m_inoutline ili ON ili.m_inout_id = i.m_inout_id
+where i.m_inout_id=1000280
+
+
+==================================================================================================================================================================
+update all doc action in material receipt windows:-
+UPDATE adempiere.m_inout
+SET DocStatus = 'CO'
+WHERE DocStatus = 'DR' and ad_client_id = 1000002 and issotrx = 'N';
+
+==================================================================================================================================================================
+
+
+
 ==================================================================================================================================================================
 
 
