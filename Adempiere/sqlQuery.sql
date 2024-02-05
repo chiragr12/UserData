@@ -470,10 +470,6 @@ GROUP BY
     po.documentno, pol.line, pol.qtyordered;
 
 
-
-
-
-
 ==================================================================================================================================================================
 Current Data record find query:-
 SELECT * FROM adempiere.m_storageonhand WHERE DATE(created) = CURRENT_DATE;
@@ -488,119 +484,6 @@ from adempiere.m_inventory a
 join adempiere.m_warehouse b on a.m_warehouse_id = b.m_warehouse_id
 join adempiere.ad_org c on a.ad_org_id = c.ad_org_id
 where a.ad_client_id = 1000002 and a.docstatus = 'DR'
-
-==================================================================================================================================================================
-sales order list
-
-SELECT
-    DISTINCT(so.documentno),
-    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
-    wh.name AS Warehouse_Name,
-    bp.name AS Supplier,
-    so.description,
-    CASE
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
-    END AS status
-FROM
-    adempiere.c_order so
-JOIN
-    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
-JOIN
-    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
-JOIN
-    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
-LEFT JOIN
-    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
-WHERE
-    sol.qtyordered > (
-        SELECT COALESCE(SUM(iol.qtyentered), 0)
-        FROM adempiere.m_inoutline iol
-        WHERE iol.c_orderline_id = sol.c_orderline_id
-    )
-AND
-    so.ad_client_id = 1000002
-AND
-    so.issotrx = 'Y'
-AND
-    so.docstatus = 'CO';
-
-
--------------------------------------------------------------------------------------------------------------------------------------------------------
-DESC Order:-
-
-SELECT
-    DISTINCT(so.documentno),
-    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
-    wh.name AS Warehouse_Name,
-    bp.name AS Supplier,
-    so.description,
-    CASE
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
-    END AS status
-FROM
-    adempiere.c_order so
-JOIN
-    adempiere.c_orderline sol ON so.c_order_id = sol.c_order_id
-JOIN
-    adempiere.c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
-JOIN
-    adempiere.m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
-LEFT JOIN
-    adempiere.m_inout mr ON so.c_order_id = mr.c_order_id
-WHERE
-    sol.qtyordered > (
-        SELECT COALESCE(SUM(iol.qtyentered), 0)
-        FROM adempiere.m_inoutline iol
-        WHERE iol.c_orderline_id = sol.c_orderline_id
-    )
-AND
-    so.ad_client_id = 1000002
-AND
-    so.issotrx = 'Y'
-AND
-    so.docstatus = 'CO'
-ORDER BY so.documentno DESC;    
-
-
-==================================================================================================================================================================
-without adempiere. table name for sales list
-
-SELECT DISTINCT
-    so.documentno,
-    TO_CHAR(so.dateordered, 'DD-MM-YYYY') AS Order_Date,
-    wh.name AS Warehouse_Name,
-    bp.name AS Supplier,
-    so.description,
-    CASE
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NULL THEN false
-        WHEN so.docstatus = 'CO' AND mr.m_inout_id IS NOT NULL THEN true 
-    END AS status
-FROM
-    c_order so
-JOIN
-    c_orderline sol ON so.c_order_id = sol.c_order_id
-JOIN
-    c_bpartner bp ON so.c_bpartner_id = bp.c_bpartner_id 
-JOIN
-    m_warehouse wh ON so.m_warehouse_id = wh.m_warehouse_id
-LEFT JOIN
-    m_inout mr ON so.c_order_id = mr.c_order_id
-WHERE
-    sol.qtyordered > (
-        SELECT COALESCE(SUM(iol.qtyentered), 0)
-        FROM m_inoutline iol
-        WHERE iol.c_orderline_id = sol.c_orderline_id
-    )
-AND
-    so.ad_client_id = 1000002
-AND
-    so.issotrx = 'Y'
-AND
-    so.docstatus = 'CO'
-ORDER BY so.documentno DESC;
-
 
 
 ==================================================================================================================================================================
@@ -617,30 +500,6 @@ WHERE d.documentno = '800022' AND d.ad_client_id = '11' AND a.c_order_id = (
 )
 GROUP BY e.m_product_id, e.name, a.qtyordered, a.c_orderline_id, a.c_uom_id, a.c_order_id;
 
-
-==================================================================================================================================================================
-Expiry Product list
-Working Query and no reapeted database:-
-
-select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, att.lot as Lot_no, wh.value as Warehouse_Name from adempiere.c_orderline a
-join adempiere.m_product b on a.m_product_id = b.m_product_id 
-join adempiere.m_inoutline mil on mil.c_orderline_id = a.c_orderline_id
-join adempiere.m_storageonhand e on mil.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.m_attributesetinstance att on att.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.c_order f on f.c_order_id = a.c_order_id
-join adempiere.m_warehouse wh on wh.m_warehouse_id = f.m_warehouse_id
-where a.ad_client_id = 1000002 and f.issotrx = 'N' and a.expirydate < CURRENT_DATE
-==================================================================================================================================================================
-Working Query near 1 month Expiry:-
-
-select b.name as Product_Name, a.expirydate, e.qtyonhand as ExpiryQTY, att.lot as Lot_no,wh.value as Warehouse_Name from adempiere.c_orderline a
-join adempiere.m_product b on a.m_product_id = b.m_product_id 
-join adempiere.m_inoutline mil on mil.c_orderline_id = a.c_orderline_id
-join adempiere.m_storageonhand e on mil.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.m_attributesetinstance att on att.m_attributesetinstance_id = e.m_attributesetinstance_id
-join adempiere.c_order f on f.c_order_id = a.c_order_id
-join adempiere.m_warehouse wh on wh.m_warehouse_id = f.m_warehouse_id
-where a.ad_client_id = 1000002 and f.issotrx = 'N'and a.expirydate >= CURRENT_DATE and a.expirydate <= (CURRENT_DATE + INTERVAL '1 month')
 
 ==================================================================================================================================================================
 ALL List API DESC Format:-
@@ -999,28 +858,7 @@ WHERE inv.ad_client_id = 1000002 AND inv.issotrx = 'Y'
 Create a new View:;-
 
 CREATE VIEW adempiere.chirag_test AS SELECT * FROM adempiere.c_invoice (if you are not enter adempiere then create Public not a adempiere)
-
-==================================================================================================================================================================
-create Expiry report View:-
-
-CREATE VIEW adempiere.ch_Expirydetails AS 
-SELECT b.name AS Product_Name,
-a.expirydate as Expiry_Date,
-e.qtyonhand AS Quantity,
-att.lot AS Lot_No,
-wh.value AS Warehouse_Name,
-ll.value AS Locator_Name,
-f.ad_client_id,
-f.ad_org_id 
-FROM adempiere.c_orderline a
-JOIN adempiere.m_product b ON a.m_product_id = b.m_product_id 
-JOIN adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
-JOIN adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
-JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
-JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
-JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
-JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
-WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE    
+ 
 
 ==================================================================================================================================================================
 Create View some restriction Parameter:- like product,bpartnerand period 
@@ -1048,27 +886,6 @@ Create View some restriction Parameter:- like product,bpartnerand period
    FROM adempiere.rv_c_invoiceline il
      JOIN adempiere.c_invoice i ON i.c_invoice_id = il.c_invoice_id
   GROUP BY il.ad_client_id, il.ad_org_id, il.m_product_id, il.c_bpartner_id, (adempiere.firstof(il.dateinvoiced::timestamp with time zone, 'MM'::character varying)), il.issotrx, i.c_currency_id;
-
-==================================================================================================================================================================
-Alter Storage il
-ALTER TABLE adempiere.M_Locator
-ADD COLUMN MaxQuantity NUMERIC;
-
-
-INSERT INTO adempiere.AD_Element (AD_Element_ID,ad_client_id,ad_org_id,isactive,createdby,updatedby,columnname,entitytype,name,printname,description,help)
-VALUES(532781,0,0,'Y',0,0,'MaxQuantity','D', 'Maximum Quantity','Maximum Quantity','','')
-
-select * from adempiere.ad_element where columnname = 'MaxQuantity'
-
-INSERT INTO adempiere.ad_column(ad_column_id,ad_client_id,ad_org_id,createdby,updatedby,name,version,entitytype,columnname,ad_table_id,ad_reference_id)
-VALUES (532781,0,0,0,0,'MaxQuantity',0,'D','MaxQuantity',207,20);
-
-INSERT INTO adempiere.ad_field(ad_field_id,ad_client_id,ad_org_id,createdby,updatedby,name,ad_tab_id,AD_Column_ID)
-VALUES(5327810,0,0,0,0,'MaxQuantity',178,532781);
-
-select * from adempiere.ad_field where ad_field_id = 5327810
-
-This above query is not required id you familiar in table and column & Window,tab and field Windows
 
 ==================================================================================================================================================================
 How to trace Locator available size:-
@@ -1177,101 +994,6 @@ ORDER BY
 Delete Warehouse id if locator is empty:-
 DELETE FROM adempiere.M_Warehouse WHERE M_Warehouse_ID = 1000027;
 
-
-==================================================================================================================================================================
-
-SELECT
-    p.m_product_id,
-    p.name AS product_name,
-    pc.name AS category_name
-FROM
-    adempiere.m_product p
-JOIN
-    adempiere.m_product_category pc ON p.m_product_category_id = pc.m_product_category_id
-WHERE
-    p.ad_client_id = 1000002 pc.m_product_category_id = your_category_id;
-    
-    
-    SELECT
-    i.c_invoice_id,
-    i.documentno AS invoice_number,
-    p.name AS product_name,
-    il.qtyinvoiced AS quantity,
-    il.linenetamt AS total_amount
-FROM
-    adempiere.c_invoice i
-JOIN
-    adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
-JOIN
-    adempiere.m_product p ON il.m_product_id = p.m_product_id
-JOIN
-    adempiere.m_product_category pc ON p.m_product_category_id = pc.m_product_category_id
-WHERE
-    i.issotrx = 'Y' -- Assuming only sales invoices are considered
-    AND p.ad_client_id = 1000002 pc.m_product_category_id = your_category_id;
-
-
-SELECT
-    i.c_invoice_id,
-    i.documentno AS invoice_number,
-    p.name AS product_name,
-    il.qtyinvoiced AS quantity,
-    il.linenetamt AS net_amount,
-    br.name AS sales_representative
-FROM
-    adempiere.c_invoice i
-JOIN
-    adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
-JOIN
-    adempiere.m_product p ON il.m_product_id = p.m_product_id
-JOIN
-    adempiere.c_bpartner br ON i.salesrep_id = br.c_bpartner_id -- Assuming sales representative information is in C_BPartner table
-WHERE
-    i.issotrx = 'Y'  AND p.ad_client_id = 1000002 -- Assuming only sales invoices are considered
-    AND i.salesrep_id = your_sales_representative_id;
-
-
-==================================================================================================================================================================
-WITH InvoiceLineTotals AS (
-    SELECT
-        il.m_product_id,
-        SUM(il.qtyinvoiced) AS TotalQty,
-        SUM(il.linenetamt) AS TotalNetAmount,
-        il.priceactual
-    FROM
-        adempiere.c_invoice i
-    JOIN
-        adempiere.c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
-    WHERE
-        i.ad_client_id = 1000002 AND
-        i.issotrx = 'Y'
-    GROUP BY
-        il.m_product_id,il.priceactual
-),
-StorageOnHandTotals AS (
-    SELECT
-        m_product_id,
-        SUM(qtyonhand) AS AvailableQty
-    FROM
-        adempiere.m_storageonhand
-    GROUP BY
-        m_product_id
-)
-SELECT
-    pr.name AS ProductName,
-    COALESCE(i.TotalQty, 0) AS TotalQty,
-    COALESCE(i.TotalNetAmount, 0) AS TotalNetAmount,
-    COALESCE(s.AvailableQty, 0) AS AQty,
-    i.priceactual*s.AvailableQty AS AValue
-FROM
-    adempiere.m_product pr
-LEFT JOIN
-    InvoiceLineTotals i ON pr.m_product_id = i.m_product_id
-LEFT JOIN
-    StorageOnHandTotals s ON pr.m_product_id = s.m_product_id
-    where pr.ad_client_id = 1000002
-ORDER BY
-    pr.name;
 
 ==================================================================================================================================================================
 SHOW PRODUCT LIST SALES AND AVAILABLE QTY:-
@@ -1565,49 +1287,6 @@ WHERE
 ORDER BY
     pr.name
 
-==================================================================================================================================================================
-Near Expiry Product list View:-
-
-CREATE VIEW adempiere.NearExpiryProductLists
- SELECT b.name AS product_name,
-    a.expirydate AS expiry_date,
-    e.qtyonhand AS quantity,
-    att.lot AS lot_no,
-    wh.value AS warehouse_name,
-    ll.value AS locator_name,
-    f.ad_client_id,
-    f.ad_org_id
-   FROM adempiere.c_orderline a
-     JOIN adempiere.m_product b ON a.m_product_id = b.m_product_id
-     JOIN adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
-     JOIN adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
-     JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
-     JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
-     JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
-     JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
-  WHERE f.issotrx = 'N' AND a.expirydate >= CURRENT_DATE;
-
-==================================================================================================================================================================
-Expiry Product Details View:-
-
-CREATE VIEW adempiere.ExpiryProductDetails AS
-   SELECT b.name AS product_name,
-    a.expirydate AS expiry_date,
-    e.qtyonhand AS quantity,
-    att.lot AS lot_no,
-    wh.value AS warehouse_name,
-    ll.value AS locator_name,
-    f.ad_client_id,
-    f.ad_org_id
-   FROM adempiere.c_orderline a
-     JOIN adempiere.m_product b ON a.m_product_id = b.m_product_id
-     JOIN adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
-     JOIN adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
-     JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
-     JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
-     JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
-     JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
-  WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE;
 
 ==================================================================================================================================================================
 Transaction dashboard:-
@@ -1818,13 +1497,123 @@ SET DocStatus = 'CO'
 WHERE DocStatus = 'DR' and ad_client_id = 1000002 and issotrx = 'N';
 
 ==================================================================================================================================================================
+Material Receipt remove records:-
+
+select * from adempiere.m_inout where documentno ='1000551' and ad_client_id = 1000002
+
+DELETE FROM adempiere.m_inout WHERE documentno = '1000551' and ad_client_id = 1000002;
+
+select * from adempiere.m_inoutline where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+delete from adempiere.m_inoutline where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+delete from adempiere.m_transaction where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+delete from adempiere.m_matchpo where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+select * from adempiere.m_matchpo where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+select * from adempiere.m_transaction where m_inoutline_id = 1002577 and ad_client_id = 1000002;
+
+==================================================================================================================================================================
+Near Expiry Product list not randomly product show:-
+
+CREATE OR REPLACE VIEW adempiere.NearExpiryProductLists AS
+SELECT 
+    b.name AS product_name,
+    a.expirydate AS expiry_date,
+    e.qtyonhand AS quantity,
+    att.lot AS lot_no,
+    wh.value AS warehouse_name,
+    ll.value AS locator_name,
+    f.ad_client_id,
+    f.ad_org_id
+FROM 
+    adempiere.c_orderline a
+JOIN 
+    adempiere.m_product b ON a.m_product_id = b.m_product_id
+JOIN 
+    adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+JOIN 
+    adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN 
+    adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+JOIN 
+    adempiere.c_order f ON f.c_order_id = a.c_order_id
+JOIN 
+    adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+JOIN 
+    adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
+WHERE 
+    f.issotrx = 'N' 
+    AND a.expirydate >= CURRENT_DATE 
+    AND a.expirydate IS NOT NULL      
+    AND att.lot IS NOT NULL AND e.qtyonhand > 0;
+
+
+==================================================================================================================================================================
+Expiry Product List:-
+
+CREATE OR REPLACE VIEW adempiere.ExpiryProductDetails AS
+   SELECT b.name AS product_name,
+    a.expirydate AS expiry_date,
+    e.qtyonhand AS quantity,
+    att.lot AS lot_no,
+    wh.value AS warehouse_name,
+    ll.value AS locator_name,
+    f.ad_client_id,
+    f.ad_org_id
+   FROM adempiere.c_orderline a
+     JOIN adempiere.m_product b ON a.m_product_id = b.m_product_id
+     JOIN adempiere.m_inoutline mil ON mil.c_orderline_id = a.c_orderline_id
+     JOIN adempiere.m_storageonhand e ON mil.m_attributesetinstance_id = e.m_attributesetinstance_id
+     JOIN adempiere.m_attributesetinstance att ON att.m_attributesetinstance_id = e.m_attributesetinstance_id
+     JOIN adempiere.c_order f ON f.c_order_id = a.c_order_id
+     JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = f.m_warehouse_id
+     JOIN adempiere.m_locator ll ON ll.m_locator_id = e.m_locator_id
+  WHERE f.issotrx = 'N' AND a.expirydate < CURRENT_DATE AND a.expirydate IS NOT NULL      
+    AND att.lot IS NOT NULL AND e.qtyonhand > 0;
+
+
+==================================================================================================================================================================
+Customer list with overdue days:-
+
+ SELECT inv.c_invoice_id AS invoice_id,
+    bp.name AS customer_name,
+    to_char(inv.dateinvoiced, 'DD/MM/YYYY'::text) AS invoice_date,
+    inv.grandtotal AS total_amount,
+    inv.ad_client_id,
+    inv.ad_org_id,
+    (CURRENT_DATE - 42)::timestamp without time zone - inv.dateinvoiced AS overduedays
+   FROM adempiere.c_invoice inv
+     JOIN adempiere.c_bpartner bp ON bp.c_bpartner_id = inv.c_bpartner_id
+  WHERE inv.ispaid = 'N' AND inv.issotrx = 'Y' AND inv.dateinvoiced <= (CURRENT_DATE - 42) and inv.ad_client_id = 1000002;
+
+==================================================================================================================================================================
+Added Favourite in dashboard:-
+
+INSERT INTO adempiere.ad_tree_favorite_node(ad_client_id,ad_menu_id,ad_org_id,ad_tree_favorite_id, ad_tree_favorite_node_id,
+seqno,createdby,updatedby,isfavourite) Values(1000002,205,1000004,1000012,1000012,1111100,1000002,1000002,'Y');
+
+
+==================================================================================================================================================================
+Added 5 records:-
+
+INSERT INTO adempiere.ad_tree_favorite_node(ad_client_id,ad_menu_id,ad_org_id,ad_tree_favorite_id, ad_tree_favorite_node_id,
+seqno,createdby,updatedby,isfavourite) Values(1000002,205,1000004,1000012,1000012,1111100,1000002,1000002,'Y'),
+(1000002,204,1000004,1000012,1000012,1111100,1000002,1000002,'Y'),(1000002,129,1000004,1000012,1000012,1111100,1000002,1000002,'Y'),
+(1000002,180,1000004,1000012,1000012,1111100,1000002,1000002,'Y'),(1000002,178,1000004,1000012,1000012,1111100,1000002,1000002,'Y');
+
 
 
 
 ==================================================================================================================================================================
+qcfailedqty check:-
 
+select m.m_inout_id,mli.m_product_id,mli.movementqty,mli.qcfailedqty,(mli.movementqty - mli.qcfailedqty) AS substralQty from adempiere.m_inout m
+JOIN adempiere.m_inoutline mli ON mli.m_inout_id = m.m_inout_id
+where m.ad_client_id = 1000002 and m.issotrx = 'N' and DATE(m.created) = DATE(NOW())
 
-==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
