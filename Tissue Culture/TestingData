@@ -1,0 +1,73 @@
+
+
+                                 Tissue Culture
+                                 
+           
+           
+     User -                            
+     Role - Field Officer 
+     
+     
+     New Registration :- (BPartner)
+     
+     Create a new Table for Farmer Registration  
+     like field name,address,survey no.,village,mobile no.
+     
+     Table Schema:-
+    CREATE TABLE adempiere.c_farmer (
+    c_farmer_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    FarmerName VARCHAR(25) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,  
+    Address VARCHAR(255),
+    Landmark VARCHAR(100),
+    SurveyNumber VARCHAR(10),
+    VillageName VARCHAR(50),
+    MobileNo NUMERIC(10));
+
+     
+     
+     Manage Visiter :-   
+     
+     	list of all visit
+     
+     First Visit:- (Purchase Order)
+     
+    	
+     
+     	create a new visit Field table above table 
+     
+     		 create a new small table 
+    	 	 field selection,
+    		 soil type,
+    		 watering type,
+    		 field managment 
+     		
+     	create a new plant details table                      
+     		create a small table
+     		plant species table,
+     		Varity
+     
+     
+     Intermediate Vist:- (Material Receipt)
+     
+     	created small table using value (Accepted,Rejected,Need of Monitor)
+     
+    	 First visiter details also come like Field details,Plant details
+     
+     Collection Visit:- (Invoice)
+     
+    	 create a new table 
+     
+     First Visit >> Intermediate Vist >> Collection Visit
+     
+     
+    
+
+     

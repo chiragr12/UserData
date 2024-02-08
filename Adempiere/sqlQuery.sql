@@ -1615,5 +1615,292 @@ JOIN adempiere.m_inoutline mli ON mli.m_inout_id = m.m_inout_id
 where m.ad_client_id = 1000002 and m.issotrx = 'N' and DATE(m.created) = DATE(NOW())
 
 
+==================================================================================================================================================================
+Warehouse list Query:-
+
+SELECT w.m_warehouse_id AS warehouseID,w.name AS warehouseName,ml.m_locator_id AS locatorID,ml.value AS locatorValue,
+ml.isdefault,CASE WHEN COALESCE(ms.TotalQty, 0) = 0 THEN 'false' ELSE 'true' END AS booleanValue,
+COALESCE(ms.TotalQty, 0) AS TotalQty,((SELECT COUNT(*)FROM adempiere.M_Locator
+WHERE m_warehouse_id = w.m_warehouse_id) - (SELECT COUNT(*)FROM adempiere.M_Locator l
+LEFT JOIN (SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty FROM adempiere.M_StorageOnHand
+GROUP BY M_Locator_ID) ms ON l.M_Locator_ID = ms.M_Locator_ID WHERE l.m_warehouse_id = w.m_warehouse_id
+AND COALESCE(ms.TotalQty, 0) = 0)) * 100 / (SELECT COUNT(*)FROM adempiere.M_Locator
+WHERE m_warehouse_id = w.m_warehouse_id) AS occupancy_percentage,lt.name AS locator_type
+FROM adempiere.m_warehouse w JOIN adempiere.m_locator ml ON ml.m_warehouse_id = w.m_warehouse_id
+JOIN adempiere.m_locatortype lt ON ml.m_locatortype_id = lt.m_locatortype_id
+LEFT JOIN (SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty FROM adempiere.M_StorageOnHand
+GROUP BY M_Locator_ID) ms ON ml.m_locator_id = ms.M_Locator_ID
+WHERE ml.ad_client_id = 1000002
+group by w.m_warehouse_id, w.name,ml.m_locator_id, lt.name, ml.value,ms.TotalQty, ml.isdefault;
 
 ==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+"SELECT \n" + "    w.m_warehouse_id as warehouseID,\n" + "    w.name as warehouseName,\n"
+          + " ml.isdefault,\n" + "    (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "     LEFT JOIN (\n"
+          + "         SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+          + "         FROM adempiere.M_StorageOnHand\n" + "         GROUP BY M_Locator_ID\n"
+          + "     ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+          + "     WHERE l.m_warehouse_id = w.m_warehouse_id\n"
+          + "     AND COALESCE(ms.TotalQty, 0) = 0) AS emptyCount,\n"
+          + "    (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS total_count,\n"
+          + "    lt.name AS locator_type,\n" + "    ml.value AS location_values,\n"
+          + "    ((SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) - \n"
+          + "     (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "      LEFT JOIN (\n"
+          + "          SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+          + "          FROM adempiere.M_StorageOnHand\n" + "          GROUP BY M_Locator_ID\n"
+          + "      ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+          + "      WHERE l.m_warehouse_id = w.m_warehouse_id\n" + "      AND COALESCE(ms.TotalQty, 0) = 0) \n"
+          + "    ) * 100 / (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS occupancy_percentage\n"
+          + "FROM \n" + "    adempiere.m_warehouse w\n" + "JOIN \n"
+          + "    adempiere.m_locator ml ON ml.m_warehouse_id = w.m_warehouse_id\n" + "JOIN \n"
+          + "    adempiere.m_locatortype lt ON ml.m_locatortype_id = lt.m_locatortype_id\n" + "WHERE \n"
+          + "    ml.ad_client_id = " + ad_client_id + "\n" + "GROUP BY \n"
+          + "    w.m_warehouse_id, w.name, lt.name,ml.value,ml.isdefault;"
+
+==================================================================================================================================================================
+-- Create pi_qrRelations table in PostgreSQL
+CREATE TABLE adempiere.pi_qrRelations (
+    pi_qrRelations_id SERIAL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isShippedOut NUMERIC(10,0),
+    pstatus text,
+    quantity NUMERIC,
+    isInLocator NUMERIC(10,0),
+    productId NUMERIC(10,0),
+    locatorId NUMERIC(10,0),
+    cOrderlineId NUMERIC(10,0),
+    mInoutlineId NUMERIC(10,0),
+    palletUUId varchar(255),
+    FOREIGN KEY (ad_client_id) REFERENCES adempiere.ad_client(ad_client_id),
+    FOREIGN KEY (ad_org_id) REFERENCES adempiere.ad_org(ad_org_id),
+    FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (productId) REFERENCES adempiere.m_product(m_product_id),
+    FOREIGN KEY (cOrderlineId) REFERENCES adempiere.c_orderline(c_orderline_id),
+    FOREIGN KEY (mInoutlineId) REFERENCES adempiere.m_inoutline(m_inoutline_id)
+);
+
+==================================================================================================================================================================
+Working Table:-
+CREATE TABLE adempiere.c_farmer (
+    c_farmer_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    FarmerName VARCHAR(25) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,  
+    Address VARCHAR(255),
+    Landmark VARCHAR(100),
+    SurveyNumber VARCHAR(10),
+    VillageName VARCHAR(50),
+    MobileNo NUMERIC(10));
+
+
+==================================================================================================================================================================
+One Table relation two another table:-
+
+CREATE TABLE adempiere.c_kishan (
+    c_kishan_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    KishanName VARCHAR(25) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,  
+    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar);
+  short table to added specific records like (name,id,etc)
+
+CREATE TABLE adempiere.c_farmlist (
+    c_farmlist_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    FarmerName VARCHAR(25) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
+    c_kishan_id numeric(10,0),
+    FOREIGN KEY (c_kishan_id) REFERENCES adempiere.c_kishan(c_kishan_id));
+this table a main table and this table multiple child like show list last two line added this methods
+
+both two table created Table & Column, Window,Tab and Field Window 
+
+above line done then created Reference window(this records important otherwise not show list view in other table)
+
+Mandotory fields:-
+Name(show in Reference_key),EntiryType = UserMaintain,Validaion = Table Validation and save 
+
+bottom see Table Validation tab create a new records
+Mandotory Field:-
+Table - Name of Table like c_kishan
+Key_Column - c_kishan_id
+Display Column - KishanName (Your Requirement what are you Display in list)
+sql where - c_kishan.c_kishan_id<>0 
+
+
+==================================================================================================================================================================
+
+
+
+
+==================================================================================================================================================================
+@Override
+    public WarehouseLocatorListResponseDocument wareList(
+            WarehouseLocatorListRequestDocument warehouseLocatorListRequestDocument) {
+        WarehouseLocatorListResponseDocument warehouseLocatorListResponseDocument = WarehouseLocatorListResponseDocument.Factory
+                .newInstance();
+        WarehouseLocatorListResponse warehouseLocatorListResponse = warehouseLocatorListResponseDocument
+                .addNewWarehouseLocatorListResponse();
+        WarehouseLocatorListRequest warehouseLocatorListRequest = warehouseLocatorListRequestDocument
+                .getWarehouseLocatorListRequest();
+        ADLoginRequest loginReq = warehouseLocatorListRequest.getADLoginRequest();
+        int ad_client_id = loginReq.getClientID();
+        String serviceType = warehouseLocatorListRequest.getServiceType();
+        PreparedStatement pstm = null;
+        ResultSet rs = null;
+
+        try {
+            String err = login(loginReq, webServiceName, "wareList", serviceType);
+            if (err != null && err.length() > 0) {
+                warehouseLocatorListResponse.setError(err);
+                warehouseLocatorListResponse.setIsError(true);
+                return warehouseLocatorListResponseDocument;
+            }
+            if (!serviceType.equalsIgnoreCase("wareList")) {
+                warehouseLocatorListResponse.setIsError(true);
+                warehouseLocatorListResponse.setError("Service type " + serviceType + " not configured");
+                return warehouseLocatorListResponseDocument;
+            }
+
+            String sql = "SELECT \n" + "    w.m_warehouse_id as warehouseID,\n" + "    w.name as warehouseName,\n"
+                    + " ml.isdefault,\n" + "    (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "     LEFT JOIN (\n"
+                    + "         SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+                    + "         FROM adempiere.M_StorageOnHand\n" + "         GROUP BY M_Locator_ID\n"
+                    + "     ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+                    + "     WHERE l.m_warehouse_id = w.m_warehouse_id\n"
+                    + "     AND COALESCE(ms.TotalQty, 0) = 0) AS emptyCount,\n"
+                    + "    (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS total_count,\n"
+                    + "    lt.name AS locator_type,\n" + "    ml.value AS location_values,\n"
+                    + "    ((SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) - \n"
+                    + "     (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "      LEFT JOIN (\n"
+                    + "          SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+                    + "          FROM adempiere.M_StorageOnHand\n" + "          GROUP BY M_Locator_ID\n"
+                    + "      ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+                    + "      WHERE l.m_warehouse_id = w.m_warehouse_id\n" + "      AND COALESCE(ms.TotalQty, 0) = 0) \n"
+                    + "    ) * 100 / (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS occupancy_percentage\n"
+                    + "FROM \n" + "    adempiere.m_warehouse w\n" + "JOIN \n"
+                    + "    adempiere.m_locator ml ON ml.m_warehouse_id = w.m_warehouse_id\n" + "JOIN \n"
+                    + "    adempiere.m_locatortype lt ON ml.m_locatortype_id = lt.m_locatortype_id\n" + "WHERE \n"
+                    + "    ml.ad_client_id = " + ad_client_id + "\n" + "GROUP BY \n"
+                    + "    w.m_warehouse_id, w.name, lt.name,ml.value,ml.isdefault;";
+            pstm = DB.prepareStatement(sql.toString(), null);
+            rs = pstm.executeQuery();
+
+            List<Integer> warehouseIds = new ArrayList<>();
+
+            while (rs.next()) {
+                int warehouseId = rs.getInt("warehouseID");
+                String warehouseName = rs.getString("warehouseName");
+                int occupancyPercents = rs.getInt("occupancy_percentage");
+                String locatorType = rs.getString("locator_type");
+                String locatorName = rs.getString("location_values");
+
+                if (!warehouseIds.contains(warehouseId)) {
+                    WarehouseListAccess warehouseListAccess = warehouseLocatorListResponse.addNewWarehouseListAccess();
+                    warehouseListAccess.setWarehouseId(warehouseId);
+                    warehouseListAccess.setWarehouseName(warehouseName);
+                    warehouseListAccess.setOccupancyPercentage(occupancyPercents);
+
+                    LocationType locationType = warehouseListAccess.addNewLocations();
+                    locationType.setLocatorTypeName(locatorType);
+
+                    Locators locators = locationType.addNewLocators();
+                    locators.setLocatorName(locatorName);
+                    locators.setIsOccupied(false);
+                    warehouseIds.add(warehouseId);
+                } else {
+                    WarehouseListAccess[] warehouseListAccessArray = warehouseLocatorListResponse
+                            .getWarehouseListAccessArray();
+                    for (WarehouseListAccess wLAcess : warehouseListAccessArray) {
+                        if (wLAcess.getWarehouseId() == warehouseId) {
+                            boolean flag = false;
+                            LocationType[] LocationsArray = wLAcess.getLocationsArray();
+                            for (LocationType lType : LocationsArray) {
+                                if (lType.getLocatorTypeName().equals(locatorType)) {
+                                    Locators locators = lType.addNewLocators();
+                                    locators.setLocatorName(locatorName);
+                                    locators.setIsOccupied(true);
+                                    flag = true;
+                                    break;
+                                }
+                            }
+                            if (flag == false) {
+                                LocationType locationType = wLAcess.addNewLocations();
+                                locationType.setLocatorTypeName(locatorType);
+                                Locators locators = locationType.addNewLocators();
+                                locators.setLocatorName(locatorName);
+                                locators.setIsOccupied(false);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            warehouseLocatorListResponse.setError(e.getLocalizedMessage());
+            warehouseLocatorListResponse.setIsError(true);
+            return warehouseLocatorListResponseDocument;
+        } finally {
+            closeDbCon(pstm, rs);
+            getCompiereService().disconnect();
+        }
+        return warehouseLocatorListResponseDocument;
+    }
+
+
+
+    ================================================    
+
+    String sql = "SELECT \n" + "    w.m_warehouse_id as warehouseID,\n" + "    w.name as warehouseName,\n"
+                    + " ml.isdefault,\n" + "    (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "     LEFT JOIN (\n"
+                    + "         SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+                    + "         FROM adempiere.M_StorageOnHand\n" + "         GROUP BY M_Locator_ID\n"
+                    + "     ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+                    + "     WHERE l.m_warehouse_id = w.m_warehouse_id\n"
+                    + "     AND COALESCE(ms.TotalQty, 0) = 0) AS emptyCount,\n"
+                    + "    (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS total_count,\n"
+                    + "    lt.name AS locator_type,\n" + "    ml.value AS location_values,\n"
+                    + "    ((SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) - \n"
+                    + "     (SELECT COUNT(*) FROM adempiere.M_Locator l\n" + "      LEFT JOIN (\n"
+                    + "          SELECT M_Locator_ID, COALESCE(SUM(QtyOnHand), 0) AS TotalQty\n"
+                    + "          FROM adempiere.M_StorageOnHand\n" + "          GROUP BY M_Locator_ID\n"
+                    + "      ) ms ON l.M_Locator_ID = ms.M_Locator_ID\n"
+                    + "      WHERE l.m_warehouse_id = w.m_warehouse_id\n" + "      AND COALESCE(ms.TotalQty, 0) = 0) \n"
+                    + "    ) * 100 / (SELECT COUNT(*) FROM adempiere.m_locator WHERE m_warehouse_id = w.m_warehouse_id) AS occupancy_percentage\n"
+                    + "FROM \n" + "    adempiere.m_warehouse w\n" + "JOIN \n"
+                    + "    adempiere.m_locator ml ON ml.m_warehouse_id = w.m_warehouse_id\n" + "JOIN \n"
+                    + "    adempiere.m_locatortype lt ON ml.m_locatortype_id = lt.m_locatortype_id\n" + "WHERE \n"
+                    + "    ml.ad_client_id = " + ad_client_id + "\n" + "GROUP BY \n"
+                    + "    w.m_warehouse_id, w.name, lt.name,ml.value,ml.isdefault;";
+
+
+     ==================================================================================================
+                    
