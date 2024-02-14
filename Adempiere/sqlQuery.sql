@@ -1758,7 +1758,116 @@ sql where - c_kishan.c_kishan_id<>0
 ==================================================================================================================================================================
 
 
+CREATE TABLE adempiere.c_variety (
+    c_variety_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    VarietyName VARCHAR(25) NOT NULL,
+    CodeNo NUMERIC(10, 0) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,  
+    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar);
+    
+    
+    CREATE TABLE adempiere.c_species (
+    c_species_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    PlantSpeciesName VARCHAR(25) NOT NULL,
+    CodeNo NUMERIC(10, 0) NOT NULL, 
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
+    c_variety_id numeric(10,0),
+    FOREIGN KEY (c_variety_id) REFERENCES adempiere.c_variety(c_variety_id));
+    
+    CREATE TABLE adempiere.c_plant (
+    c_plant_id numeric(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    PlantName VARCHAR(25) NOT NULL,
+    Created TIMESTAMP without time zone DEFAULT now() not null,
+    Createdby numeric(10,0) not null,
+    Updated TIMESTAMP without time zone DEFAULT now() not null,
+    Updatedby NUMERIC(10,0) not null,
+    Description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
+    c_species_id numeric(10,0),
+    c_species_ids numeric(10,0),
+    FOREIGN KEY (c_species_id) REFERENCES adempiere.c_species(c_species_id),
+    FOREIGN KEY (c_species_ids) REFERENCES adempiere.c_species(c_species_id));
 
+
+
+==================================================================================================================================================================
+Stock checked:-
+
+SELECT EXTRACT(DAY FROM CURRENT_DATE - i.created) AS stockCheckDays
+FROM adempiere.m_inventory i 
+JOIN adempiere.m_inventoryline li ON i.m_inventory_id = li.m_inventory_id
+WHERE i.ad_client_id = 1000002
+ORDER BY i.created DESC
+LIMIT 1;
+
+
+==================================================================================================================================================================
+CREATE TABLE adempiere.pi_productLabel (
+    pi_productLabel_ID SERIAL PRIMARY KEY,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isShippedOut NUMERIC(10,0),
+    pstatus text,
+    quantity NUMERIC,
+    isInLocator NUMERIC(10,0),
+    m_product_ID NUMERIC(10,0),
+    locatorId NUMERIC(10,0),
+    c_orderline_Id NUMERIC(10,0),
+    m_inoutline_Id NUMERIC(10,0),
+    labelUUId varchar(255),
+    FOREIGN KEY (ad_client_id) REFERENCES adempiere.ad_client(ad_client_id),
+    FOREIGN KEY (ad_org_id) REFERENCES adempiere.ad_org(ad_org_id),
+    FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (m_product_ID) REFERENCES adempiere.m_product(m_product_id),
+    FOREIGN KEY (c_orderline_Id) REFERENCES adempiere.c_orderline(c_orderline_id),
+    FOREIGN KEY (m_inoutline_Id) REFERENCES adempiere.m_inoutline(m_inoutline_id)
+);
+
+
+==================================================================================================================================================================
+locator wise product list:-
+
+SELECT ly.name AS locatorTypeName,SUM(sh.qtyonhand) AS Qty FROM adempiere.m_locatortype ly 
+JOIN adempiere.m_locator lo ON lo.m_locatortype_id = ly.m_locatortype_id
+JOIN adempiere.m_storageonhand sh ON sh.m_locator_id = lo.m_locator_id
+WHERE ly.ad_client_id = 1000002 GROUP BY ly.name
+
+==================================================================================================================================================================
+warehouse wise product list:-
+
+SELECT wh.name AS warehouseName,SUM(sh.qtyonhand) AS Qty FROM adempiere.m_warehouse wh
+JOIN adempiere.m_locator lo ON lo.m_warehouse_id = wh.m_warehouse_id
+JOIN adempiere.m_storageonhand sh ON sh.m_locator_id = lo.m_locator_id
+WHERE wh.ad_client_id = 1000002 GROUP BY wh.name
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
 
 ==================================================================================================================================================================
 @Override
