@@ -30,4 +30,11 @@
 
 	and your location by default set your requirement Country for language wise.
 
-4. 	
+4. 	Time Zone change from database
+
+	go to terminal:-
+	cd /etc/postgresql/14/main/
+	sudo nano postgresql.conf
+
+	and change only one line and time zone set
+	log_timezone = 'Asia/Kolkata'

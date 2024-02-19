@@ -1806,6 +1806,33 @@ CREATE TABLE adempiere.c_variety (
     FOREIGN KEY (c_species_id) REFERENCES adempiere.c_species(c_species_id),
     FOREIGN KEY (c_species_ids) REFERENCES adempiere.c_species(c_species_id));
 
+CREATE TABLE adempiere.pi_productLabelss (
+    pi_productLabelss_ID SERIAL PRIMARY KEY,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    qcPassed varchar(1),
+    quantity NUMERIC,
+    m_product_ID NUMERIC(10,0),
+    m_locator_ID NUMERIC(10,0),
+    c_orderline_ID NUMERIC(10,0) NULL,
+    m_inoutline_ID NUMERIC(10,0) NULL,
+    issotrx varchar(1),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    labelUUId varchar(255),
+    FOREIGN KEY (ad_client_iD) REFERENCES adempiere.ad_client(ad_client_id),
+    FOREIGN KEY (ad_org_iD) REFERENCES adempiere.ad_org(ad_org_id),
+    FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (m_product_ID) REFERENCES adempiere.m_product(m_product_id),
+    FOREIGN KEY (m_locator_ID) REFERENCES adempiere.m_locator(m_locator_ID),
+    FOREIGN KEY (c_orderline_ID) REFERENCES adempiere.c_orderline(c_orderline_id),
+    FOREIGN KEY (m_inoutline_ID) REFERENCES adempiere.m_inoutline(m_inoutline_id)
+);
+// If not use in isactive field window is not proper working
 
 
 ==================================================================================================================================================================
@@ -1864,10 +1891,75 @@ JOIN adempiere.m_storageonhand sh ON sh.m_locator_id = lo.m_locator_id
 WHERE wh.ad_client_id = 1000002 GROUP BY wh.name
 
 
+
+-------------------
+
+SELECT 
+    wh.name AS warehouseName,wh.m_warehouse_id ,
+    COALESCE(SUM(sh.qtyonhand), 0) AS Qty 
+FROM 
+    adempiere.m_warehouse wh
+LEFT JOIN 
+    adempiere.m_locator lo ON lo.m_warehouse_id = wh.m_warehouse_id
+LEFT JOIN 
+    adempiere.m_storageonhand sh ON sh.m_locator_id = lo.m_locator_id
+WHERE 
+    wh.ad_client_id = 1000002 AND sh.m_product_id = 1000041 
+GROUP BY 
+    wh.name,wh.m_warehouse_id;
+
+
+==================================================================================================================================================================
+Merge of two or more  table:-
+SELECT name,value,created,description FROM adempiere.m_product
+UNION
+SELECT name,value,created,description FROM adempiere.c_bpartner
+UNION
+SELECT name,value,created,description FROM adempiere.ad_user
+where ad_client_id = 1000002 order by created desc;
+
+==================================================================================================================================================================
+Label Report View:-
+
+CREATE VIEW adempiere.pi_productlabelviews AS
+SELECT p.m_product_id,lo.m_warehouse_id,p.m_locator_id,p.m_inoutline_id,p.c_orderline_id,o.c_order_id,
+p.labeluuid AS LabelUUID ,p.quantity AS Quantity,p.qcpassed,p.issotrx,p.created,p.ad_client_id,p.ad_org_id FROM adempiere.pi_productLabel p
+JOIN adempiere.m_locator lo ON lo.m_locator_id = p.m_locator_id 
+JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = lo.m_warehouse_id
+JOIN adempiere.c_orderline li ON li.c_orderline_id = p.c_orderline_id
+JOIN adempiere.c_order o ON o.c_order_id = li.c_order_id;
+
+
+==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================
+
+
+
 ==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
 
 ==================================================================================================================================================================
 @Override

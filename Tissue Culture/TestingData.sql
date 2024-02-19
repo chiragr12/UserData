@@ -1,8 +1,6 @@
 
-
                                  Tissue Culture
-                                 
-           
+                                   
            
      User -                            
      Role - Field Officer 
@@ -12,7 +10,7 @@
      
      Create a new Table for Farmer Registration  
      like field name,address,survey no.,village,mobile no.
-     
+      
      Table Schema:-
     CREATE TABLE adempiere.c_farmer (
     c_farmer_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
@@ -66,7 +64,7 @@
      
     	 create a new table 
      
-     First Visit >> Intermediate Vist >> Collection Visit
+     First Visit >> Intermediate Vist >> Collection Visit 
      
  First Visit:-
      
@@ -228,7 +226,6 @@
     ad_org_id NUMERIC(10, 0) NOT NULL,
     code_no VARCHAR(10) NOT NULL,
     name VARCHAR(30) NOT NULL,
-    varity_code_no VARCHAR(10) NOT NULL,
     created TIMESTAMP without time zone DEFAULT now() not null,
     createdby NUMERIC(10,0) not null,
     updated TIMESTAMP without time zone DEFAULT now() not null,
