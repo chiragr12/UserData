@@ -1848,30 +1848,54 @@ LIMIT 1;
 
 ==================================================================================================================================================================
 CREATE TABLE adempiere.pi_productLabel (
-    pi_productLabel_ID SERIAL PRIMARY KEY,
+    pi_productLabelss_ID SERIAL PRIMARY KEY,
     ad_client_ID NUMERIC(10, 0) NOT NULL,
     ad_org_ID NUMERIC(10, 0) NOT NULL,
     created timestamp without time zone NOT NULL DEFAULT now(),
     createdby numeric(10,0) NOT NULL,
     updated timestamp without time zone NOT NULL DEFAULT now(),
     updatedby numeric(10,0) NOT NULL,
-    isShippedOut NUMERIC(10,0),
-    pstatus text,
+    qcPassed varchar(1),
     quantity NUMERIC,
-    isInLocator NUMERIC(10,0),
     m_product_ID NUMERIC(10,0),
-    locatorId NUMERIC(10,0),
-    c_orderline_Id NUMERIC(10,0),
-    m_inoutline_Id NUMERIC(10,0),
+    m_locator_ID NUMERIC(10,0),
+    c_orderline_ID NUMERIC(10,0) NULL,
+    m_inoutline_ID NUMERIC(10,0) NULL,
+    issotrx varchar(1),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     labelUUId varchar(255),
-    FOREIGN KEY (ad_client_id) REFERENCES adempiere.ad_client(ad_client_id),
-    FOREIGN KEY (ad_org_id) REFERENCES adempiere.ad_org(ad_org_id),
+    FOREIGN KEY (ad_client_iD) REFERENCES adempiere.ad_client(ad_client_id),
+    FOREIGN KEY (ad_org_iD) REFERENCES adempiere.ad_org(ad_org_id),
     FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
     FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
     FOREIGN KEY (m_product_ID) REFERENCES adempiere.m_product(m_product_id),
-    FOREIGN KEY (c_orderline_Id) REFERENCES adempiere.c_orderline(c_orderline_id),
-    FOREIGN KEY (m_inoutline_Id) REFERENCES adempiere.m_inoutline(m_inoutline_id)
+    FOREIGN KEY (m_locator_ID) REFERENCES adempiere.m_locator(m_locator_ID),
+    FOREIGN KEY (c_orderline_ID) REFERENCES adempiere.c_orderline(c_orderline_id),
+    FOREIGN KEY (m_inoutline_ID) REFERENCES adempiere.m_inoutline(m_inoutline_id)
 );
+
+
+View Table:-
+
+CREATE VIEW adempiere.pi_productlabelview AS 
+SELECT p.m_product_id,
+    lo.m_warehouse_id,
+    p.m_locator_id,
+    p.m_inoutline_id,
+    p.c_orderline_id,
+    o.c_order_id,
+    p.labeluuid,
+    p.quantity,
+    p.qcpassed,
+    p.issotrx,
+    p.created,
+    p.ad_client_id,
+    p.ad_org_id
+FROM adempiere.pi_productlabel p
+    JOIN adempiere.m_locator lo ON lo.m_locator_id = p.m_locator_id
+    JOIN adempiere.m_warehouse wh ON wh.m_warehouse_id = lo.m_warehouse_id
+    JOIN adempiere.c_orderline li ON li.c_orderline_id = p.c_orderline_id
+    JOIN adempiere.c_order o ON o.c_order_id = li.c_order_id;
 
 
 ==================================================================================================================================================================
