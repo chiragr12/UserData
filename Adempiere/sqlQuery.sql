@@ -1847,8 +1847,11 @@ LIMIT 1;
 
 
 ==================================================================================================================================================================
+pi label and view table:-
+
+
 CREATE TABLE adempiere.pi_productLabel (
-    pi_productLabelss_ID SERIAL PRIMARY KEY,
+    pi_productLabel_ID SERIAL PRIMARY KEY,
     ad_client_ID NUMERIC(10, 0) NOT NULL,
     ad_org_ID NUMERIC(10, 0) NOT NULL,
     created timestamp without time zone NOT NULL DEFAULT now(),

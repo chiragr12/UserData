@@ -29,7 +29,7 @@ First Visit:-
     ad_org_id NUMERIC(10, 0) NOT NULL,
     name VARCHAR(25) NOT NULL,
     created TIMESTAMP without time zone DEFAULT now() not null,
-    ceatedby NUMERIC(10,0) not null,
+    createdby NUMERIC(10,0) not null,
     updated TIMESTAMP without time zone DEFAULT now() not null,
     updatedby NUMERIC(10,0) not null,
     description VARCHAR(255),
@@ -228,8 +228,8 @@ First Visit:-
  
     Decision Table:-                   
      
-    CREATE TABLE adempiere.tc_decesion (
-    tc_decesion_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    CREATE TABLE adempiere.tc_decision (
+    tc_decision_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
     ad_client_id NUMERIC(10, 0) NOT NULL,
     ad_org_id NUMERIC(10, 0) NOT NULL,
     reason VARCHAR(25),
@@ -260,14 +260,14 @@ First Visit:-
     next_visit_date DATE,
     tc_visit_id NUMERIC(10,0),
     tc_farmer_id NUMERIC(10,0),
-    tc_decesion_id NUMERIC(10,0),
+    tc_decision_id NUMERIC(10,0),
     tc_firstvisit_id NUMERIC(10,0),
     FOREIGN KEY (tc_visit_id) REFERENCES adempiere.tc_visit(tc_visit_id),
     FOREIGN KEY (tc_farmer_id) REFERENCES adempiere.tc_farmer(tc_farmer_id),
     FOREIGN KEY (tc_firstvisit_id) REFERENCES
      adempiere.tc_firstvisit(tc_firstvisit_id),
-    FOREIGN KEY (tc_decesion_id) REFERENCES
-     adempiere.tc_decesion(tc_decesion_id));
+    FOREIGN KEY (tc_decision_id) REFERENCES
+     adempiere.tc_decision(tc_decision_id));
      
      Collection Details Table:-
      
