@@ -35,6 +35,8 @@ If system starting setup step by step do work
 
   Realmeds-Selfcare/allInOne
   -- nodemon //node . (ka use bhi karke wahi kam kar sakte hai jo nodemon karta hai)
+  nvm version
+  nvm use 14
   ng serve (This command is running port 4200 if you are running in ec2 ins. then using ng-build)
   (Local mai port 4200 ka use kiya jata hai isi mai login kiya jata hai)
 

@@ -1958,14 +1958,53 @@ JOIN adempiere.c_order o ON o.c_order_id = li.c_order_id;
 
 
 ==================================================================================================================================================================
+remove one table to another table FOREIGN key:-
 
+this query use show constraint value for your table :-
+
+SELECT constraint_name
+FROM information_schema.table_constraints
+WHERE table_name = 'tc_hardeningdetail'
+AND constraint_type = 'FOREIGN KEY';
+
+enter constraint value and remove FOREIGN key:-
+
+ALTER TABLE adempiere.tc_hardeningdetail DROP CONSTRAINT tc_hardeningdetail_tc_cropdetils_id_fkey;
+
+Remove FOREIGN key id and column name :-
+
+ALTER TABLE adempiere.tc_hardeningdetail DROP COLUMN tc_cropdetils_id;
+
+and last check id is remove or not:-
+
+select * from adempiere.tc_hardeningdetail
 
 
 ==================================================================================================================================================================
+Added FOREIGN KEY in any other table:-
 
+ALTER TABLE tc_collectiondetails
+ADD COLUMN tc_plantdetails_id NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_collectiondetails
+ADD CONSTRAINT tc_collectiondetails_tc_plantdetails_id_fkey
+FOREIGN KEY (tc_plantdetails_id)
+REFERENCES adempiere.tc_plantdetails(tc_plantdetails_id);
 
 
 ==================================================================================================================================================================
+Create a new Model (will be explained more in detail)
+Except for the other mandatory fields the model must contain the following fields
+C_DocType_ID numeric(10,0) NOT NULL DEFAULT 0::numeric (Reference = Table, Reference Key = C_DocType)
+C_DocTypeTarget_ID numeric(10,0) NOT NULL DEFAULT 0::numeric
+DocAction character varying(2) NOT NULL DEFAULT 'CO'::bpchar (Reference = Button, Process = Custom Workflow, Reference Key = _Document Action)
+DocStatus character varying(2) NOT NULL DEFAULT 'DR'::character varying (Reference = List, Reference Key = _Document Status)
+DocumentNo character varying(30) NOT NULL
+processed character(1) DEFAULT 'N'::bpchar
+processing character(1) DEFAULT 'N'::bpchar
+isapproved character(1) NOT NULL DEFAULT 'Y'::bpchar
+Generate the model class
+The model class must implement DocAction.
 
 
 ==================================================================================================================================================================
