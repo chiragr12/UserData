@@ -11,7 +11,7 @@ idempiere documentation
   
   2. for browser icon
       name: ZK_BROWSER_ICON
-      Configured Value: ~./theme/default/images/icon.png
+      Configured Value: ~./theme/default/images/icon.png  (added images path in Eclipse /org.adempiere.ui.zk/WEB-INF/src/web/theme/default/images)
 
   3. for icon which is same as 5th one, but will used in diff locations
       name: ZK_LOGIN_ICON

@@ -2008,6 +2008,146 @@ The model class must implement DocAction.
 
 
 ==================================================================================================================================================================
+Change Data Type:-
+ALTER TABLE adempiere.tc_cycle
+ALTER COLUMN cycle_no TYPE VARCHAR(10);
+
+
+
+==================================================================================================================================================================
+Reports:-
+
+CREATE VIEW adempiere.tc_stagewiseP AS SELECT m_product_id,m_locator_id,quantity FROM adempiere.tc_out
+
+CREATE VIEW adempiere.tc_techwiseP AS SELECT ord.salesrep_id,o.m_product_id,o.m_locator_id,o.quantity,o.ad_client_id,o.ad_org_id FROM adempiere.tc_out o
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
+
+
+==================================================================================================================================================================
+report Query:-
+
+SELECT i.tc_in_id,CONCAT(i_pr.name, '-', o_pr.name) AS StageAndCycle,
+    CASE 
+        WHEN LAG(i.tc_in_id) OVER (ORDER BY i.tc_in_id) = i.tc_in_id THEN ''
+        ELSE i.quantity::text
+    END AS i_quantity,o.quantity AS o_quantity
+FROM adempiere.tc_out o
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
+WHERE DATE(o.created) = DATE(NOW()) 
+ORDER BY i.tc_in_id;
+
+         Final:-
+
+CREATE OR REPLACE VIEW adempiere.tcv_CultureProductionView AS
+SELECT CONCAT(i_pr.name, '-', o_pr.name) AS StageAndCycle,
+    CASE WHEN LAG(i.tc_in_id) OVER (ORDER BY i.tc_in_id) = i.tc_in_id THEN NULL
+    ELSE i.quantity END AS quantity,
+    NULLIF(CASE WHEN o_pr.name LIKE 'M%' OR o_pr.name LIKE 'N%' THEN o.quantity ELSE 0 END, 0) AS M,
+    NULLIF(CASE WHEN o_pr.name LIKE 'E%' THEN o.quantity ELSE 0 END, 0) AS E,
+    NULLIF(CASE WHEN o_pr.name LIKE 'R%' THEN o.quantity ELSE 0 END, 0) AS R,
+    o.ad_client_id,o.ad_org_id,o.created
+FROM adempiere.tc_out o
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id;
+
+
+Reports:-
+
+SELECT 
+    i_pr.name AS stageAndCycle,
+    NULLIF(SUM(CASE WHEN DATE(i.created) = DATE(NOW()) THEN i.quantity ELSE 0 END), 0) AS OpeningStock,
+    NULLIF(SUM(CASE WHEN DATE(i.created) != DATE(NOW()) THEN i.quantity ELSE 0 END), 0) AS Stocked,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'N%' THEN o.quantity ELSE 0 END), 0) AS N,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'M%' THEN o.quantity ELSE 0 END), 0) AS M,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'E%' THEN o.quantity ELSE 0 END), 0) AS E,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'R%' THEN o.quantity ELSE 0 END), 0) AS R,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'H%' THEN o.quantity ELSE 0 END), 0) AS Hardning
+FROM 
+    adempiere.tc_in i
+JOIN 
+    adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN 
+    adempiere.tc_out o ON o.tc_in_id = i.tc_in_id
+JOIN 
+    adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+GROUP BY
+    i_pr.name;
+
+            Final:-
+
+CREATE VIEW adempiere.tcv_growthRoomCultureProduction AS
+SELECT i_pr.name AS stageAndCycle,
+    NULLIF(SUM(CASE WHEN DATE(i.created) != DATE(NOW()) THEN i.quantity ELSE 0 END), 0) AS OpeningStock,
+    NULLIF(SUM(CASE WHEN DATE(i.created) = DATE(NOW()) THEN i.quantity ELSE 0 END), 0) AS Stocked,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'N%' THEN o.quantity ELSE 0 END), 0) AS N,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'M%' THEN o.quantity ELSE 0 END), 0) AS M,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'E%' THEN o.quantity ELSE 0 END), 0) AS E,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'R%' THEN o.quantity ELSE 0 END), 0) AS R,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'H%' THEN o.quantity ELSE 0 END), 0) AS Hardning,
+    i.ad_client_id,i.ad_org_id,MAX(Date(i.created)) AS orderDate
+FROM adempiere.tc_in i
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_out o ON o.tc_in_id = i.tc_in_id
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+GROUP BY i_pr.name,i.ad_client_id,i.ad_org_id;            
+
+
+
+
+==================================================================================================================================================================
+
+CREATE TABLE adempiere.tc_mediaorder (
+        tc_mediaorder_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        name varchar(25) NOT NULL,value varchar(25),
+        created TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        createdby NUMERIC(10,0) NOT NULL,
+        updated TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        updatedby NUMERIC(10,0) NOT NULL,
+        description VARCHAR(255),
+        documentNo VARCHAR(25) NOT NULL,
+        isactive CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
+        isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar,
+        docaction CHAR(2) NOT NULL DEFAULT 'CO'::bpchar,
+        DocStatus CHAR(2) NOT NULL DEFAULT 'DR'::bpchar,
+        c_doctype_id numeric(10,0) NOT NULL,
+        c_doctypetarget_id numeric(10,0) NOT NULL,
+        processed CHAR(1) DEFAULT 'N'::bpchar,
+        processing CHAR(1) DEFAULT 'N'::bpchar,
+        posted CHAR(1) DEFAULT 'N'::bpchar,
+        isapproved CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
+        dateOrdered DATE,
+        salesrep_id NUMERIC(10,0),
+        m_warehouse_id NUMERIC(10,0),
+        FOREIGN KEY (m_warehouse_id) REFERENCES adempiere.m_warehouse(m_warehouse_id));
+        
+        
+        CREATE TABLE adempiere.tc_medialine (
+        tc_medialine_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        created TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        createdby NUMERIC(10,0) NOT NULL,
+        updated TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        updatedby NUMERIC(10,0) NOT NULL,
+        line numeric(10,0) NOT NULL,
+        description VARCHAR(255),
+        isactive CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
+        quantity NUMERIC(10,0), 
+        tc_mediaorder_id NUMERIC(10,0),
+        m_locator_id NUMERIC(10,0),
+        m_product_id NUMERIC(10,0),
+        c_uom_id NUMERIC(10,0),
+        FOREIGN KEY (c_uom_id) REFERENCES adempiere.c_uom(c_uom_id),    
+        FOREIGN KEY (tc_mediaorder_id) REFERENCES adempiere.tc_mediaorder(tc_mediaorder_id),
+        FOREIGN KEY (m_locator_id) REFERENCES adempiere.m_locator(m_locator_id),
+        FOREIGN KEY (m_product_id) REFERENCES adempiere.m_product(m_product_id));
 
 
 
@@ -2021,8 +2161,46 @@ The model class must implement DocAction.
 ==================================================================================================================================================================
 
 
+
 ==================================================================================================================================================================
 
+
+
+==================================================================================================================================================================
+
+
+
+==================================================================================================================================================================
+sudo apt update
+sudo apt-add-repository -y ppa:git-core/ppa
+sudo apt update
+sudo apt install git -y
+sudo apt install docker.io -y
+sudo apt install python3 -y
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.35.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+nvm install 10  
+nvm use 10
+sudo apt install docker-compose -y
+sudo apt install golang-go -y
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin   
+
+sudo usermod -a -G docker ${USER}
+sudo reboot
+sudo chmod 666 /var/run/docker.sock 
+curl -sSL http://bit.ly/2ysbOFE | bash -s -- 2.5.6 1.5.9 
+
+cd fabric-samples
+sudo cp bin/* /usr/local/bin    '*/'not use after bin ' 
+ls (not see chaincode folder)
+    
+this above command is using every thing image is downloaded and fabric-sample folder also available
+but inside fabric-sample folder not show chaincode folder
+why 
+if i had any mistake please suggest me and solve my problem
 
 ==================================================================================================================================================================
 

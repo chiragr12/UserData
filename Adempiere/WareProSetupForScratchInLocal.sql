@@ -51,4 +51,10 @@ WarePro complete Setup in my Local:-
 	fill up all details 
 
 8. go to server.product and show runing		
+
+9. If your system not show server.product then go to this process :-
+	server.product
+     download file and add file in folder (folder only show in lauch configuration)
+     File->import->Run/Debug->launch configuration->choose folder and click check and finish 
+     then show server.product
   		
