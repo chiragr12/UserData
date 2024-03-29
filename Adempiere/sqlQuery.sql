@@ -2017,7 +2017,10 @@ ALTER COLUMN cycle_no TYPE VARCHAR(10);
 ==================================================================================================================================================================
 Reports:-
 
-CREATE VIEW adempiere.tc_stagewiseP AS SELECT m_product_id,m_locator_id,quantity FROM adempiere.tc_out
+CREATE VIEW adempiere.tc_stagewiseProductivity AS
+SELECT o.m_product_id As Stage,o.m_locator_id AS RRC,o.quantity,l.x AS Room 
+FROM adempiere.tc_out o
+JOIN adempiere.m_locator l ON l.m_locator_id = o.m_locator_id
 
 CREATE VIEW adempiere.tc_techwiseP AS SELECT ord.salesrep_id,o.m_product_id,o.m_locator_id,o.quantity,o.ad_client_id,o.ad_org_id FROM adempiere.tc_out o
 JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
@@ -2094,7 +2097,75 @@ FROM adempiere.tc_in i
 JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
 JOIN adempiere.tc_out o ON o.tc_in_id = i.tc_in_id
 JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
-GROUP BY i_pr.name,i.ad_client_id,i.ad_org_id;            
+GROUP BY i_pr.name,i.ad_client_id,i.ad_org_id;   
+
+
+With MediaOutLines AS (
+SELECT pro.m_product_id,sum(mol.quantity) As TotalQty
+    from adempiere.tc_mediaoutline mol
+    JOIN adempiere.m_product pro ON pro.m_product_id = mol.m_product_id
+    GROUP BY pro.m_product_id),
+MediaLines AS (
+SELECT pr.m_product_id,
+NULLIF(SUM(CASE WHEN DATE(ml.created) != DATE(NOW()) THEN ml.quantity ELSE 0 END), 0) AS OpeningStock,
+NULLIF(SUM(CASE WHEN DATE(ml.created) = DATE(NOW()) THEN ml.quantity ELSE 0 END), 0) AS Stocked 
+from adempiere.tc_medialine ml
+JOIN adempiere.m_product pr ON pr.m_product_id = ml.m_product_id
+    GROUP BY pr.m_product_id)
+select pr.m_product_id,pr.name AS MediaCategory,pr.description AS CodeIfAny,
+ROUND(COALESCE(ml.OpeningStock, 0), 0) AS OpeningBalance,
+ROUND(COALESCE(ml.Stocked, 0), 0) AS MediaStocked,
+ROUND(COALESCE(mol.TotalQty, 0), 0) AS IssueToCT,
+(COALESCE(ml.OpeningStock, 0) + COALESCE(ml.Stocked, 0) - COALESCE(mol.TotalQty, 0)) AS Balance
+from adempiere.m_product pr
+LEFT JOIN MediaLines ml ON pr.m_product_id = ml.m_product_id
+LEFT JOIN MediaOutLines mol ON pr.m_product_id = mol.m_product_id
+where pr.m_product_category_id = 1000005
+
+
+Final:-
+
+WITH MediaOutLines AS (
+    SELECT 
+        pro.m_product_id,
+        SUM(mol.quantity) AS TotalQty
+    FROM 
+        adempiere.tc_mediaoutline mol
+    JOIN 
+        adempiere.m_product pro ON pro.m_product_id = mol.m_product_id
+    GROUP BY 
+        pro.m_product_id
+),
+MediaLines AS (
+    SELECT 
+        pr.m_product_id,
+        NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date = DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS OpeningStock,
+        NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date != DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS Stocked 
+    FROM 
+        adempiere.tc_medialine ml
+    JOIN 
+        adempiere.m_product pr ON pr.m_product_id = ml.m_product_id
+    GROUP BY 
+        pr.m_product_id
+)
+SELECT 
+    pr.m_product_id,
+    pr.name AS MediaCategory,
+    pr.description AS CodeIfAny,
+    ROUND(COALESCE(ml.OpeningStock, 0), 0) AS OpeningBalance,
+    ROUND(COALESCE(ml.Stocked, 0), 0) AS MediaStocked,
+    ROUND(COALESCE(mol.TotalQty, 0), 0) AS IssueToCT,
+    (COALESCE(ml.OpeningStock, 0) + COALESCE(ml.Stocked, 0) - COALESCE(mol.TotalQty, 0)) AS Balance
+FROM 
+    adempiere.m_product pr
+LEFT JOIN 
+    MediaLines ml ON pr.m_product_id = ml.m_product_id
+LEFT JOIN 
+    MediaOutLines mol ON pr.m_product_id = mol.m_product_id
+WHERE 
+    pr.m_product_category_id = 1000005;
+
+         
 
 
 
@@ -2120,7 +2191,6 @@ CREATE TABLE adempiere.tc_mediaorder (
         c_doctypetarget_id numeric(10,0) NOT NULL,
         processed CHAR(1) DEFAULT 'N'::bpchar,
         processing CHAR(1) DEFAULT 'N'::bpchar,
-        posted CHAR(1) DEFAULT 'N'::bpchar,
         isapproved CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
         dateOrdered DATE,
         salesrep_id NUMERIC(10,0),
@@ -2150,20 +2220,129 @@ CREATE TABLE adempiere.tc_mediaorder (
         FOREIGN KEY (m_product_id) REFERENCES adempiere.m_product(m_product_id));
 
 
+        CREATE TABLE adempiere.tc_mediaoutline (
+        tc_mediaoutline_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        created TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        createdby NUMERIC(10,0) NOT NULL,
+        updated TIMESTAMP without time zone DEFAULT now() NOT NULL,
+        updatedby NUMERIC(10,0) NOT NULL,
+        description VARCHAR(255),
+        isactive CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
+        quantity NUMERIC(10,0),
+        tc_order_id NUMERIC(10,0),
+        m_locator_id NUMERIC(10,0),
+        m_product_id NUMERIC(10,0),
+        c_uom_id NUMERIC(10,0),
+        tc_out_id NUMERIC(10,0),
+        tc_medialine_id NUMERIC(10,0),
+        tc_mediaoutline_uu VARCHAR(36) DEFAULT NULL::bpchar,
+        FOREIGN KEY (c_uom_id) REFERENCES adempiere.c_uom(c_uom_id),
+        FOREIGN KEY (tc_out_id) REFERENCES adempiere.tc_out(tc_out_id),
+        FOREIGN KEY (tc_medialine_id) REFERENCES adempiere.tc_medialine(tc_medialine_id),
+        FOREIGN KEY (tc_order_id) REFERENCES adempiere.tc_order(tc_order_id),
+        FOREIGN KEY (m_locator_id) REFERENCES adempiere.m_locator(m_locator_id),
+        FOREIGN KEY (m_product_id) REFERENCES adempiere.m_product(m_product_id));
+
+
 
 ==================================================================================================================================================================
+Postgres data backup:-
+pg_dump -U adempiere erp > data.sql
+
+==================================================================================================================================================================
+Tissue Report in server:-
+
+1. StagewiseProductivity
+CREATE OR REPLACE VIEW adempiere.tc_stagewiseProductivity AS
+SELECT o.m_product_id As Stage,o.m_locator_id AS RRC,o.quantity,l.x AS Room,o.created,o.ad_client_id,o.ad_org_id,,pr.name As StageN 
+FROM adempiere.tc_out o
+JOIN adempiere.m_locator l ON l.m_locator_id = o.m_locator_id
+JOIN adempiere.m_product pr ON pr.m_product_id = o.m_product_id;
+
+2. TechnicianWise Productivity
+CREATE OR REPLACE VIEW adempiere.tc_technicianWiseProductvity AS 
+SELECT ord.salesrep_id AS Technician,o.m_product_id AS StageId,o.m_locator_id RRC,o.quantity,o.ad_client_id,o.ad_org_id,o.created,pr.name As Stage 
+FROM adempiere.tc_out o
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
+JOIN adempiere.m_product pr ON pr.m_product_id = o.m_product_id;
+
+3. Culture Production 
+CREATE OR REPLACE VIEW adempiere.tcv_CultureProductionView AS
+SELECT CONCAT(i_pr.name, '-', o_pr.name) AS StageAndCycle,
+    CASE WHEN LAG(i.tc_in_id) OVER (ORDER BY i.tc_in_id) = i.tc_in_id THEN NULL
+    ELSE i.quantity END AS quantity,
+    NULLIF(CASE WHEN o_pr.name LIKE 'M%' OR o_pr.name LIKE 'N%' THEN o.quantity ELSE 0 END, 0) AS M,
+    NULLIF(CASE WHEN o_pr.name LIKE 'E%' THEN o.quantity ELSE 0 END, 0) AS E,
+    NULLIF(CASE WHEN o_pr.name LIKE 'R%' THEN o.quantity ELSE 0 END, 0) AS R,
+    o.ad_client_id,o.ad_org_id,o.created
+FROM adempiere.tc_out o
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id;
+
+4. GrowthRoom Culture Production
+CREATE VIEW adempiere.tcv_growthRoomCultureProduction AS
+SELECT i_pr.name AS stageAndCycle,
+    NULLIF(SUM(CASE WHEN DATE_TRUNC('month', i.created) != DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0) AS OpeningStock,
+    NULLIF(SUM(CASE WHEN DATE_TRUNC('month', i.created) = DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0) AS Stocked,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'N%' THEN o.quantity ELSE 0 END), 0) AS ToCT,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'M%' THEN o.quantity ELSE 0 END), 0) AS M,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'E%' THEN o.quantity ELSE 0 END), 0) AS E,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'R%' THEN o.quantity ELSE 0 END), 0) AS R,
+    NULLIF(SUM(CASE WHEN o_pr.name LIKE 'H%' THEN o.quantity ELSE 0 END), 0) AS Hardning,
+    i.ad_client_id,i.ad_org_id,MAX(Date(i.created)) AS orderDate
+FROM adempiere.tc_in i
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_out o ON o.tc_in_id = i.tc_in_id
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+GROUP BY i_pr.name,i.ad_client_id,i.ad_org_id;
+
+5. Media Production:-
+CREATE OR REPLACE VIEW adempiere.tcv_MediaProduction AS
+WITH MediaOutLines AS (
+SELECT pro.m_product_id,SUM(mol.quantity) AS TotalQty
+FROM adempiere.tc_mediaoutline mol
+JOIN adempiere.m_product pro ON pro.m_product_id = mol.m_product_id
+GROUP BY pro.m_product_id),
+MediaLines AS (
+SELECT pr.m_product_id,MIN(DATE(ml.created)) AS created,
+NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date = DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS OpeningStock,
+NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date != DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS Stocked 
+FROM adempiere.tc_medialine ml
+JOIN adempiere.m_product pr ON pr.m_product_id = ml.m_product_id
+GROUP BY pr.m_product_id)
+SELECT pr.m_product_id,pr.name AS MediaCategory,pr.description AS CodeIfAny,
+COALESCE(ml.OpeningStock, 0) AS OpeningBalance,COALESCE(ml.Stocked, 0) AS MediaStocked,
+COALESCE(mol.TotalQty, 0) AS IssueToCT,
+(COALESCE(ml.OpeningStock, 0) + COALESCE(ml.Stocked, 0) - COALESCE(mol.TotalQty, 0)) AS Balance,ml.created,pr.ad_client_id,pr.ad_org_id
+FROM adempiere.m_product pr
+LEFT JOIN MediaLines ml ON pr.m_product_id = ml.m_product_id
+LEFT JOIN MediaOutLines mol ON pr.m_product_id = mol.m_product_id
+WHERE pr.m_product_category_id = 1000005;
 
 
 ==================================================================================================================================================================
-
-
-
-==================================================================================================================================================================
-
+ALTER TABLE adempiere.tc_farmer
+ALTER COLUMN mobileno TYPE VARCHAR(11);
 
 
 ==================================================================================================================================================================
-
+CREATE TABLE adempiere.tc_planttag (
+    tc_planttag_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),value varchar(25),
+    documentNo VARCHAR(25) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tc_planttag_uu VARCHAR(36) NOT NULL);
 
 
 ==================================================================================================================================================================

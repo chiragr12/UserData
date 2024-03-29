@@ -19,6 +19,13 @@
     mobileNo NUMERIC(10));
 
 
+    ALTER TABLE adempiere.tc_farmer
+ALTER COLUMN mobileno TYPE VARCHAR(10);
+
+ALTER TABLE adempiere.tc_visit
+ALTER COLUMN mobileno TYPE VARCHAR(10);
+
+
 First Visit:-
      
      Field Selection Table:-
@@ -515,6 +522,10 @@ First Visit:-
         description VARCHAR(255),
         isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
+
+        ALTER TABLE adempiere.tc_roomnumber
+      ALTER COLUMN roomNo TYPE VARCHAR(10);
+
         
     storage details:-
 
@@ -639,3 +650,32 @@ First Visit:-
 
         ALTER TABLE adempiere.tc_cycle 
         ADD COLUMN value VARCHAR(40);
+
+
+        CREATE TABLE adempiere.tc_planttag (
+    tc_planttag_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),value varchar(25),
+    documentNo VARCHAR(25) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tc_planttag_uu VARCHAR(36) NOT NULL);
+
+        CREATE TABLE adempiere.tc_hardeningtraytag (
+    tc_hardeningtraytag_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),value varchar(25),
+    documentNo VARCHAR(25) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tc_hardeningtraytag_uu VARCHAR(36) NOT NULL);
