@@ -679,3 +679,135 @@ First Visit:-
     description VARCHAR(255),
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     tc_hardeningtraytag_uu VARCHAR(36) NOT NULL);
+
+
+###
+        CREATE TABLE adempiere.tc_cultureLabel (
+    tc_cultureLabel_id SERIAL PRIMARY KEY,
+    tc_cultureLabel_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    parentCultureLine VARCHAR(255),
+    cultureDate DATE,
+    cycleNo NUMERIC(10,0),
+    tc_species_id NUMERIC(10,0),
+    tc_species_ids NUMERIC(10,0),
+    tc_naturesample_id NUMERIC(10,0),
+    tc_culturestage_id NUMERIC(10,0),
+    tc_virustesting_id NUMERIC(10,0),
+    tc_mediatype_id NUMERIC(10,0),
+    tcpf VARCHAR(25),
+    cultureOperationDate DATE,
+    personal_code VARCHAR(25),
+    tc_machinetype_id NUMERIC(10,0),
+    FOREIGN KEY (tc_machinetype_id) REFERENCES adempiere.tc_machinetype(tc_machinetype_id),
+    FOREIGN KEY (tc_mediatype_id) REFERENCES adempiere.tc_mediatype(tc_mediatype_id),
+    FOREIGN KEY (tc_species_id) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_species_ids) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_naturesample_id) REFERENCES
+     adempiere.tc_naturesample(tc_naturesample_id),
+    FOREIGN KEY (tc_culturestage_id) REFERENCES
+     adempiere.tc_culturestage(tc_culturestage_id),
+    FOREIGN KEY (tc_virustesting_id) REFERENCES
+     adempiere.tc_virustesting(tc_virustesting_id)
+    );
+
+
+        ### Hardening Label:-
+
+        CREATE TABLE adempiere.tc_hardeningLabel (
+    tc_hardeningLabel_id SERIAL PRIMARY KEY,
+    tc_hardeningLabel_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    parentCultureLine VARCHAR(255),
+    sourcingDate DATE,
+    cycleNo NUMERIC(10,0),
+    tc_species_id NUMERIC(10,0),
+    tc_species_ids NUMERIC(10,0),
+    tc_naturesample_id NUMERIC(10,0),
+    tc_culturestage_id NUMERIC(10,0),
+    tc_virustesting_id NUMERIC(10,0),
+    tcpf VARCHAR(25),
+    operationDate DATE,
+    personalCode VARCHAR(25),
+    FOREIGN KEY (tc_species_id) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_species_ids) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_naturesample_id) REFERENCES
+     adempiere.tc_naturesample(tc_naturesample_id),
+    FOREIGN KEY (tc_culturestage_id) REFERENCES
+     adempiere.tc_culturestage(tc_culturestage_id),
+    FOREIGN KEY (tc_virustesting_id) REFERENCES
+     adempiere.tc_virustesting(tc_virustesting_id)
+    );
+
+        ## Explant LAbel:-
+
+        CREATE TABLE adempiere.tc_explantLabel (
+    tc_explantLabel_id SERIAL PRIMARY KEY,
+    tc_explantLabel_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    parentCultureLine VARCHAR(255),
+    sourcingDate DATE,
+    tc_species_id NUMERIC(10,0),
+    tc_species_ids NUMERIC(10,0),
+    tc_naturesample_id NUMERIC(10,0),
+    tcpf VARCHAR(25),
+    operationDate DATE,
+    personalCode VARCHAR(25),
+    FOREIGN KEY (tc_species_id) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_species_ids) REFERENCES adempiere.tc_plantspecies(tc_plantspecies_id),
+    FOREIGN KEY (tc_naturesample_id) REFERENCES
+     adempiere.tc_naturesample(tc_naturesample_id)
+    );
+
+        ##Media Label
+
+        CREATE TABLE adempiere.tc_mediaLabelQr (
+    tc_mediaLabelQr_id SERIAL PRIMARY KEY,
+    tc_mediaLabelQr_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tcpf VARCHAR(25),
+    operationDate DATE,
+    personalCode VARCHAR(25),
+    tc_machinetype_id NUMERIC(10,0),
+    tc_mediatype_id NUMERIC(10,0),
+    tc_medialine_id NUMERIC(10,0),
+    FOREIGN KEY (tc_medialine_id) REFERENCES adempiere.tc_medialine(tc_medialine_id),
+    FOREIGN KEY (tc_machinetype_id) REFERENCES adempiere.tc_machinetype(tc_machinetype_id),
+    FOREIGN KEY (tc_mediatype_id) REFERENCES adempiere.tc_mediatype(tc_mediatype_id)
+    );
+
+ALTER TABLE adempiere.tc_cultureLabel ADD COLUMN tc_in_id NUMERIC(10,0) ;
+ALTER TABLE adempiere.tc_cultureLabel
+ADD CONSTRAINT tc_cultureLabel_tc_in_id_fkey
+FOREIGN KEY (tc_in_id)
+REFERENCES adempiere.tc_in(tc_in_id);
+
+ALTER TABLE adempiere.tc_cultureLabel ADD COLUMN tc_out_id NUMERIC(10,0) ;
+ALTER TABLE adempiere.tc_cultureLabel
+ADD CONSTRAINT tc_cultureLabel_tc_out_id_fkey
+FOREIGN KEY (tc_out_id)
+REFERENCES adempiere.tc_out(tc_out_id);

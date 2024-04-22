@@ -2344,9 +2344,463 @@ CREATE TABLE adempiere.tc_planttag (
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     tc_planttag_uu VARCHAR(36) NOT NULL);
 
+CREATE TABLE adempiere.tc_hardeningtraytag (
+    tc_hardeningtraytag_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),value varchar(25),
+    documentNo VARCHAR(25) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tc_hardeningtraytag_uu VARCHAR(36) NOT NULL);
+    
+
+==================================================================================================================================================================
+Jasper line seperator:-
+"Room (X) : " + $F{x} + System.getProperty("line.separator") +
+"Rack (Y) : " + $F{y} + System.getProperty("line.separator") +
+"Column (Z) : " + $F{z}
+==================================================================================================================================================================
+
+
+SELECT v.name,vt.name AS VisitType,v.date,
+    CASE 
+        WHEN v.description = 'completed' THEN 'Completed'
+        WHEN v.description = 'cancel' THEN 'Cancelled'
+        ELSE 'In Progress'
+    END AS Status
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000;
+
+==================================================================================================================================================================
+ create view adempiere.tcv_expiryview AS
+ SELECT s.name AS species,
+    v.name AS variety,
+    cs.name AS stageandcycle,
+    cd.parentcultureline,
+    cd.date,
+        CASE
+            WHEN (cd.date + '21 days'::interval) >= CURRENT_DATE THEN date(cd.date + '21 days'::interval)
+            ELSE NULL::date
+        END AS expiry_date,
+    cd.ad_client_id,
+    cd.ad_org_id
+   FROM adempiere.tc_culturedetails cd
+     JOIN adempiere.tc_plantspecies s ON s.tc_plantspecies_id = cd.tc_species_id
+     JOIN adempiere.tc_plantspecies si ON si.tc_plantspecies_id = cd.tc_species_ids
+     JOIN adempiere.tc_variety v ON v.tc_variety_id = s.tc_variety_id
+     JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cd.tc_culturestage_id;
+==================================================================================================================================================================
+SELECT
+    COUNT(CASE WHEN v.description = 'completed' THEN 1 END) AS Completed_Count,
+    COUNT(CASE WHEN v.description = 'cancel' THEN 1 END) AS Cancelled_Count,
+    COUNT(CASE WHEN v.description is null THEN 1 END) AS InProgress_Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000;
+
+==================================================================================================================================================================
+SELECT 
+    SUM(CASE WHEN DATE(created) = CURRENT_DATE THEN suckerno ELSE 0 END) AS today_sucker_sum,
+    SUM(suckerno) AS all_no_sucker
+FROM adempiere.tc_collectiondetails
+WHERE ad_client_id = 1000000;
+==================================================================================================================================================================
+SELECT COUNT(*) AS incount ,
+(SELECT COUNT(*) AS outCount FROM adempiere.tc_out)
+FROM adempiere.tc_in
+WHERE ad_client_id = 1000000
+==================================================================================================================================================================
+This query is most important because this two different required done:-
+
+SELECT inCount,inQty,outCount,outQty
+FROM (SELECT COUNT(*) AS inCount,SUM(quantity) AS inQty
+FROM adempiere.tc_in WHERE ad_client_id = 1000000) AS inSubquery,
+(SELECT COUNT(*) AS outCount,SUM(quantity) AS outQty 
+FROM adempiere.tc_out) AS outSubquery;
+
 
 ==================================================================================================================================================================
 
+SELECT 
+    (SELECT COUNT(*) FROM adempiere.tc_visit WHERE ad_client_id = 1000000) AS TO_Count,
+    (SELECT COUNT(*) FROM adempiere.tc_order WHERE ad_client_id = 1000000) AS LT_Count,
+    (SELECT COUNT(*) FROM adempiere.tc_mediaorder WHERE ad_client_id = 1000000) AS ML_Count;
+
+
+
+==================================================================================================================================================================
+Attachement Image convert base 64;-
+
+            
+         MAttachment attechment = MAttachment.get(ctx, tableId,recordId);
+         MAttachmentEntry[] entries = attechment.getEntries();
+          
+          for(MAttachmentEntry entry : entries) {
+              byte[] data = entry.getData();
+              
+             base64 = Base64.getEncoder().encodeToString(data);
+          }
+         System.out.println(base64);
+            
+
+==================================================================================================================================================================
+Remove not null value :-
+ALTER TABLE adempiere.tc_firstvisit ALTER COLUMN name DROP NOT NULL;
+
+
+==================================================================================================================================================================
+SELECT Category,SUM(TotalQuantity) AS TotalQuantity
+FROM (
+    SELECT 
+        CASE 
+            WHEN pr.name LIKE 'BI%' OR pr.name LIKE 'N%' THEN 'Initiation'
+            WHEN pr.name LIKE 'BM%' OR pr.name LIKE 'M%' THEN 'Multiplication'
+            WHEN pr.name LIKE 'BE%' OR pr.name LIKE 'E%' THEN 'Elongation'
+            WHEN pr.name LIKE 'BR%' OR pr.name LIKE 'R%' THEN 'Rooting'
+            WHEN pr.name LIKE 'BH%' OR pr.name LIKE 'H%' THEN 'Hardening'
+            ELSE 'Other'
+        END AS Category,
+        o.quantity AS TotalQuantity
+    FROM adempiere.tc_out o
+    JOIN adempiere.m_product pr ON pr.m_product_id = o.m_product_id
+) AS Subquery
+WHERE Category <> 'Other' GROUP BY Category ORDER BY Category;
+
+==================================================================================================================================================================
+SELECT vt.name AS VisitType,
+    COALESCE(COUNT(v.tc_visittype_id), 0) AS VisitCount,u.name AS UserName
+FROM adempiere.tc_visittype vt
+CROSS JOIN adempiere.ad_user u
+LEFT JOIN adempiere.tc_visit v ON vt.tc_visittype_id = v.tc_visittype_id
+AND u.ad_user_id = v.createdby
+WHERE u.ad_user_id IN (SELECT ad_user_id FROM adempiere.ad_user_roles WHERE ad_role_id = 1000002) AND vt.ad_client_id = 1000000
+GROUP BY vt.name,vt.tc_visittype_id, u.name
+ORDER BY u.name,vt.tc_visittype_id, vt.name;
+
+==================================================================================================================================================================
+SELECT vt.name AS VisitType,
+    COALESCE(COUNT(v.tc_visittype_id), 0) AS VisitCount,u.name AS UserName
+FROM adempiere.tc_visittype vt
+CROSS JOIN adempiere.ad_user u
+LEFT JOIN adempiere.tc_visit v ON vt.tc_visittype_id = v.tc_visittype_id
+AND u.ad_user_id = v.createdby
+WHERE u.ad_user_id IN (SELECT ad_user_id FROM adempiere.ad_user_roles WHERE ad_role_id = 1000002) AND vt.ad_client_id = 1000000
+GROUP BY vt.name,vt.tc_visittype_id, u.name
+ORDER BY u.name,vt.tc_visittype_id, vt.name;
+
+==================================================================================================================================================================
+select sr.name,pr.name,ou.quantity from adempiere.tc_order o
+join adempiere.ad_user sr ON o.salesrep_id = sr.ad_user_id
+join adempiere.tc_out ou ON ou.tc_order_id = o.tc_order_id
+join adempiere.m_product pr ON pr.m_product_id = ou.m_product_id
+where o.ad_client_id = 1000000 order by sr.name
+==================================================================================================================================================================
+WITH user_totals AS (SELECT sr.ad_user_id AS user_id,
+sr.name AS user_names,SUM(ou.quantity) AS total_quantity
+FROM adempiere.tc_order o
+JOIN adempiere.ad_user sr ON o.salesrep_id = sr.ad_user_id
+JOIN adempiere.tc_out ou ON ou.tc_order_id = o.tc_order_id
+WHERE o.ad_client_id = 1000000
+GROUP BY sr.ad_user_id, sr.name),
+max_user AS (SELECT user_id,user_names,total_quantity
+FROM user_totals ORDER BY total_quantity DESC LIMIT 1)
+SELECT 
+    CASE
+        WHEN ut.user_id = mu.user_id THEN ut.user_names
+        ELSE ut.user_names
+    END AS UserName,
+    ut.user_id AS UserId,SUM(ut.total_quantity) AS TotalQuantity
+FROM user_totals ut
+CROSS JOIN max_user mu
+GROUP BY 
+    CASE
+        WHEN ut.user_id = mu.user_id THEN ut.user_names
+        ELSE ut.user_names
+    END, ut.user_id
+ORDER BY ut.user_id;
+
+this query is proper working
+
+==================================================================================================================================================================
+SELECT 'Completed' AS Status,
+    COUNT(CASE WHEN v.description = 'completed' THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000
+UNION ALL
+SELECT 'Cancelled' AS Status,
+    COUNT(CASE WHEN v.description = 'cancel' THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000
+UNION ALL
+SELECT 'Upcoming' AS Status,
+    COUNT(CASE WHEN v.description IS NULL THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000;
+
+==
+SELECT o.salesrep_id, u.name AS user_name, SUM(ml.quantity) AS total_quantity
+FROM adempiere.tc_mediaorder o
+JOIN adempiere.tc_medialine ml ON ml.tc_mediaorder_id = o.tc_mediaorder_id
+JOIN adempiere.ad_user u ON u.ad_user_id = o.salesrep_id
+GROUP BY o.salesrep_id, u.name;
+================================================================================================================================================================
+SELECT o.salesrep_id AS userId, u.name AS userName, SUM(ml.quantity) AS totalQuantity
+FROM adempiere.tc_mediaorder o
+JOIN adempiere.tc_medialine ml ON ml.tc_mediaorder_id = o.tc_mediaorder_id
+JOIN adempiere.ad_user u ON u.ad_user_id = o.salesrep_id
+WHERE o.ad_client_id = 1000000
+GROUP BY o.salesrep_id, u.name;
+
+==================================================================================================================================================================
+CREATE OR REPLACE VIEW adempiere.TCV_mediareports AS
+WITH MediaOutLines AS (
+SELECT pro.m_product_id,SUM(mol.quantity) AS TotalQty,mol.description
+FROM adempiere.tc_mediaoutline mol
+JOIN adempiere.m_product pro ON pro.m_product_id = mol.m_product_id
+GROUP BY pro.m_product_id,mol.description),
+MediaLines AS (
+SELECT pr.m_product_id,MIN(DATE(ml.created)) AS created,
+NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date = DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS openingstock,
+NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date != DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS Stocked 
+FROM adempiere.tc_medialine ml
+JOIN adempiere.m_product pr ON pr.m_product_id = ml.m_product_id
+GROUP BY pr.m_product_id)
+SELECT pr.m_product_id,pr.name AS MediaCategory,pr.description AS CodeIfAny,
+COALESCE(ml.openingstock, 0) AS OpeningBalance,COALESCE(ml.Stocked, 0) AS MediaStocked,
+COALESCE(mol.TotalQty, 0) AS IssueToCT,
+(COALESCE(ml.openingstock, 0) + COALESCE(ml.Stocked, 0) - COALESCE(mol.TotalQty, 0)) AS Balance,ml.created,pr.ad_client_id,pr.ad_org_id,mol.description AS Discard
+FROM adempiere.m_product pr
+LEFT JOIN MediaLines ml ON pr.m_product_id = ml.m_product_id
+LEFT JOIN MediaOutLines mol ON pr.m_product_id = mol.m_product_id
+WHERE pr.m_product_category_id = 1000005;
+====================================================
+
+==============================================================================================================
+CREATE OR REPLACE VIEW adempiere.TCV_mediareportNew AS
+WITH MediaOutLines AS (
+    SELECT 
+        pro.m_product_id,
+        COALESCE(SUM(mol.quantity), 0) AS TotalQty,
+        mol.description
+    FROM 
+        adempiere.m_product pro
+    LEFT JOIN 
+        adempiere.tc_mediaoutline mol ON pro.m_product_id = mol.m_product_id
+    GROUP BY 
+        pro.m_product_id,
+        mol.description
+),
+MediaLines AS (
+    SELECT 
+        pr.m_product_id,
+        MIN(DATE(ml.created)) AS created,
+        NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date = DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS openingstock,
+        NULLIF(SUM(CASE WHEN DATE_TRUNC('month', ml.created)::date != DATE_TRUNC('month', CURRENT_DATE)::date THEN ml.quantity ELSE 0 END), 0) AS Stocked 
+    FROM 
+        adempiere.m_product pr
+    LEFT JOIN 
+        adempiere.tc_medialine ml ON pr.m_product_id = ml.m_product_id
+    GROUP BY 
+        pr.m_product_id
+)
+SELECT 
+    pr.m_product_id,
+    pr.name AS MediaCategory,
+    pr.description AS CodeIfAny,
+    COALESCE(ml.openingstock, 0) AS OpeningBalance,
+    COALESCE(ml.Stocked, 0) AS MediaStocked,
+    COALESCE(mol.TotalQty, 0) AS IssueToCT,
+    (COALESCE(ml.openingstock, 0) + COALESCE(ml.Stocked, 0) - COALESCE(mol.TotalQty, 0)) AS Balance,
+    ml.created,
+    pr.ad_client_id,
+    pr.ad_org_id,
+    mol.description AS Discard,
+    -- Calculate the Progressive Total of Media Stocked PrePacked for the one-year period
+    SUM(CASE 
+            WHEN DATE_TRUNC('year', ml.created) = DATE_TRUNC('year', CURRENT_DATE) THEN COALESCE(ml.Stocked, 0) 
+            ELSE 0 
+        END) 
+    OVER (PARTITION BY pr.m_product_id ORDER BY ml.created ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS ProgressiveTotalOneYear
+FROM 
+    adempiere.m_product pr
+LEFT JOIN 
+    MediaLines ml ON pr.m_product_id = ml.m_product_id
+LEFT JOIN 
+    MediaOutLines mol ON pr.m_product_id = mol.m_product_id
+WHERE 
+    pr.m_product_category_id = 1000005;
+
+==================================================================================================================================================================
+Added Any new Fiels and Foreign key in Table:-
+ALTER TABLE adempiere.tc_order 
+ADD cultureCode VARCHAR(255);
+
+ALTER TABLE adempiere.tc_order
+ADD COLUMN tc_variety_id NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_order
+ADD CONSTRAINT tc_order_tc_variety_id_fkey
+FOREIGN KEY (tc_variety_id)
+REFERENCES adempiere.tc_variety(tc_variety_id);
+
+Alter table adempiere.tc_out
+add column discardQty NUMERIC(10,0);
+
+Alter table adempiere.tc_medialine
+add column discardQty NUMERIC(10,0);
+
+
+
+==================================================================================================================================================================
+Jasper Report in GrowthRoom:-
+SELECT v.name,ord.tc_variety_id,ord.culturecode,v.codeno,COALESCE(o.description, '') AS Contamination,i_pr.name AS stageAndCycle,
+    COALESCE(NULLIF(SUM(CASE WHEN DATE_TRUNC('month', i.created) != DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0),0) AS OpeningStock,
+    COALESCE(NULLIF(SUM(CASE WHEN DATE_TRUNC('month', i.created) = DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0),0) AS Stocked,
+    COALESCE(NULLIF(SUM(CASE WHEN o_pr.name LIKE 'N%' OR o_pr.name LIKE 'BI%' THEN o.quantity ELSE 0 END), 0),0) AS ToCT,
+    COALESCE(NULLIF(SUM(CASE WHEN o_pr.name LIKE 'M%' OR o_pr.name LIKE 'BM%' THEN o.quantity ELSE 0 END), 0),0) AS M,
+    COALESCE(NULLIF(SUM(CASE WHEN o_pr.name LIKE 'E%' OR o_pr.name LIKE 'BE%' THEN o.quantity ELSE 0 END), 0),0) AS E,
+    COALESCE(NULLIF(SUM(CASE WHEN o_pr.name LIKE 'R%' OR o_pr.name LIKE 'BR%' THEN o.quantity ELSE 0 END), 0),0) AS R,
+    COALESCE(NULLIF(SUM(CASE WHEN o_pr.name LIKE 'H%' OR o_pr.name LIKE 'BH%' THEN o.quantity ELSE 0 END), 0),0) AS Hardning,
+    i.ad_client_id,i.ad_org_id,MAX(Date(i.created)) AS orderDate
+FROM adempiere.tc_in i
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_out o ON o.tc_in_id = i.tc_in_id
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = ord.tc_variety_id
+where ord.ad_client_id = 1000000  AND o.created > '9/04/2024' AND o.created < '11/04/2024'
+GROUP BY i_pr.name,i.ad_client_id,i.ad_org_id,v.name,ord.tc_variety_id,ord.culturecode,v.codeno,o.description Order By v.codeno;
+
+
+
+
+==================================================================================================================================================================
+Jasper Report in Culture Production:-
+SELECT v.name,ord.tc_variety_id,ord.culturecode,CONCAT(i_pr.name, '-', o_pr.name) AS StageAndCycle,v.codeno,
+    CASE 
+        WHEN LAG(i.tc_in_id) OVER (ORDER BY i.tc_in_id) = i.tc_in_id THEN NULL
+        ELSE i.quantity 
+    END AS quantity,
+    COALESCE(NULLIF(CASE WHEN o_pr.name LIKE 'M%' OR o_pr.name LIKE 'N%' OR o_pr.name LIKE 'BM%' THEN o.quantity ELSE 0 END, 0), 0) AS M,
+    COALESCE(NULLIF(CASE WHEN o_pr.name LIKE 'E%' OR o_pr.name LIKE 'BE%' THEN o.quantity ELSE 0 END, 0), 0) AS E,
+    COALESCE(NULLIF(CASE WHEN o_pr.name LIKE 'R%' OR o_pr.name LIKE 'BR%' THEN o.quantity ELSE 0 END, 0), 0) AS R,
+    o.ad_client_id,o.ad_org_id,o.created
+FROM adempiere.tc_out o
+JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id
+JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+JOIN adempiere.tc_order ord ON ord.tc_order_id = o.tc_order_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = ord.tc_variety_id
+WHERE ord.ad_client_id = 1000000 AND o.created > '9/04/2024' AND o.created < '11/04/2024' 
+ORDER BY v.codeno;
+
+
+
+==================================================================================================================================================================
+Culture Label View:-
+SELECT cl.tc_CultureLabel_id,cl.tc_CultureLabel_uu,cl.created,cl.parentcultureline,cl.cycleno,cl.tcpf,cl.personal_code,
+ps.codeno AS cropType,v.codeno AS Variety,ns.codeno AS natureSample,cs.codeno AS cultureStage,vt.name AS virusResult,mt.name AS mediaType,mat.machinecode AS machineName,
+cl.ad_client_id,cl.ad_org_id FROM adempiere.tc_CultureLabel cl
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = cl.tc_species_ids
+JOIN adempiere.tc_naturesample ns ON ns.tc_naturesample_id = cl.tc_naturesample_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl.tc_culturestage_id
+JOIN adempiere.tc_virustesting vt ON vt.tc_virustesting_id = cl.tc_virustesting_id
+JOIN adempiere.tc_mediatype mt ON mt.tc_mediatype_id = cl.tc_mediatype_id
+JOIN adempiere.tc_machinetype mat ON mat.tc_machinetype_id = cl.tc_machinetype_id
+
+
+==================================================================================================================================================================
+Change Column Name:-
+ALTER TABLE table_name RENAME COLUMN old_column_name TO new_column_name
+
+ALTER TABLE adempiere.tc_machinetype RENAME COLUMN machinecode TO codeNo
+
+==================================================================================================================================================================
+Explant LAbel Get:-
+SELECT el.tc_explantLabel_id,el.tc_explantLabel_uu,el.parentcultureline,el.tcpf,el.personalCode,
+ps.codeno AS cropType,v.codeno AS Variety,ns.codeno AS natureSample,
+el.sourcingDate AS explantDate,el.operationDate AS explantOperationDate
+FROM adempiere.tc_explantLabel el
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = el.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = el.tc_species_ids
+JOIN adempiere.tc_naturesample ns ON ns.tc_naturesample_id = el.tc_naturesample_id
+WHERE el.ad_client_id = 1000000 AND el.tc_explantLabel_uu = 'e50919e4-90a9-4e9f-a2e8-371adedc9bef';
+==================================================================================================================================================================
+Get Culture Label:-
+SELECT cl.tc_CultureLabel_id,cl.tc_CultureLabel_uu,cl.created,cl.parentcultureline,cl.cycleno,cl.tcpf,cl.personal_code,
+ps.codeno AS cropType,v.codeno AS Variety,ns.codeno AS natureSample,cs.codeno AS cultureStage,vt.name AS virusResult,mt.name AS mediaType,mat.machinecode AS machineName,
+cl.ad_client_id,cl.ad_org_id FROM adempiere.tc_CultureLabel cl
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = cl.tc_species_ids
+JOIN adempiere.tc_naturesample ns ON ns.tc_naturesample_id = cl.tc_naturesample_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl.tc_culturestage_id
+JOIN adempiere.tc_virustesting vt ON vt.tc_virustesting_id = cl.tc_virustesting_id
+JOIN adempiere.tc_mediatype mt ON mt.tc_mediatype_id = cl.tc_mediatype_id
+JOIN adempiere.tc_machinetype mat ON mat.tc_machinetype_id = cl.tc_machinetype_id;
+==================================================================================================================================================================
+Culture Operation Date:-
+SELECT cl.tc_CultureLabel_id,cl.tc_CultureLabel_uu,cl.parentcultureline,cl.cycleno,cl.tcpf,cl.personal_code,
+ps.codeno AS cropType,v.codeno AS Variety,ns.codeno AS natureSample,cs.codeno AS cultureStage,vt.name AS virusResult,mt.name AS mediaType,mat.machinecode AS machineName,
+cl.culturedate AS cultureDate,cl.cultureoperationdate AS cultureOperationDate
+FROM adempiere.tc_cultureLabel cl
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = cl.tc_species_ids
+JOIN adempiere.tc_naturesample ns ON ns.tc_naturesample_id = cl.tc_naturesample_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl.tc_culturestage_id
+JOIN adempiere.tc_virustesting vt ON vt.tc_virustesting_id = cl.tc_virustesting_id
+JOIN adempiere.tc_mediatype mt ON mt.tc_mediatype_id = cl.tc_mediatype_id
+JOIN adempiere.tc_machinetype mat ON mat.tc_machinetype_id = cl.tc_machinetype_id
+WHERE cl.ad_client_id = 1000000 AND cl.tc_cultureLabel_uu = '22a40c03-6faf-49c0-945f-ca7edab1bd2d';
+==================================================================================================================================================================
+Media Label Data:-
+CREATE TABLE adempiere.tc_mediaLabelQr (
+    tc_mediaLabelQr_id SERIAL PRIMARY KEY,
+    tc_mediaLabelQr_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    tcpf VARCHAR(25),
+    operationDate DATE,
+    personalCode VARCHAR(25),
+    tc_machinetype_id NUMERIC(10,0),
+    tc_mediatype_id NUMERIC(10,0),
+    tc_medialine_id NUMERIC(10,0),
+    FOREIGN KEY (tc_medialine_id) REFERENCES adempiere.tc_medialine(tc_medialine_id),
+    FOREIGN KEY (tc_machinetype_id) REFERENCES adempiere.tc_machinetype(tc_machinetype_id),
+    FOREIGN KEY (tc_mediatype_id) REFERENCES adempiere.tc_mediatype(tc_mediatype_id)
+    );
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
