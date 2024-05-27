@@ -1,0 +1,28 @@
+Old APi is working 24/06/2024 so i teach new version api and how can use :-
+
+Build a Message Request:
+
+{
+  "message": {
+    "token": "<REGISTRATION_TOKEN>",
+    "notification": {
+      "title": "Hello",
+      "body": "World"
+    }
+  }
+}
+
+
+Send the Requset APi :
+POST https://fcm.googleapis.com/v1/projects/<PROJECT_ID>/messages:send
+PROJECT_ID = Firebase Project Id
+
+
+Authorization: Bearer <ACCESS_TOKEN>
+Access Token : go to Google cloud  and go to service account and 
+first check your create service account is created or not if not created then create manually after create go to inside and go to key and create a new key 
+you show key copy and paste access token place
+
+
+
+

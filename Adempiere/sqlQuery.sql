@@ -2583,7 +2583,21 @@ LEFT JOIN MediaLines ml ON pr.m_product_id = ml.m_product_id
 LEFT JOIN MediaOutLines mol ON pr.m_product_id = mol.m_product_id
 WHERE pr.m_product_category_id = 1000005;
 ====================================================
+WITH RECURSIVE cte AS (
+-- Anchor query
+SELECT parentuuid, tc_in_id, tc_out_id,c_uuid
+FROM adempiere.tc_culturelabel
+WHERE c_uuid = '32f0ba8d-1c87-49e0-b2d8-970634eb5732'
 
+UNION ALL
+
+-- Recursive query
+SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id,t2.c_uuid
+FROM cte t1
+JOIN adempiere.tc_culturelabel t2
+ON t1.parentuuid = t2.c_uuid
+)
+SELECT * FROM cte;
 ==============================================================================================================
 CREATE OR REPLACE VIEW adempiere.TCV_mediareportNew AS
 WITH MediaOutLines AS (
@@ -2784,21 +2798,726 @@ CREATE TABLE adempiere.tc_mediaLabelQr (
     FOREIGN KEY (tc_mediatype_id) REFERENCES adempiere.tc_mediatype(tc_mediatype_id)
     );
 ==================================================================================================================================================================
+Trace :-
+SELECT ins.tc_in_id,ins.inUUid,ins.description,ins.m_product_id As inProductId,outs.tc_out_id, outs.c_uuid AS outUUid,
+outs.m_product_id As outProductId,outs.cycle
+FROM adempiere.tc_out AS outs
+JOIN (
+    SELECT tc_in_id, c_uuid AS inUUid, description,m_product_id
+    FROM adempiere.tc_in
+    WHERE ad_client_id = 1000000
+) AS ins ON ins.tc_in_id = outs.tc_in_id
+where ins.description = 'eceb9173-35c5-48ff-ac89-937e3ea4f543';
+==================================================================================================================================================================
+Primary Hardening Get Data:-
+SELECT ph.tc_primaryhardeningLabel_id,ph.c_uuId AS UUId,ph.yearCode AS yearCode,ph.parentCultureLine AS PCultureLine,
+ph.sourcingDate AS date,ph.cultureProcessedNumber AS cultureProcessNumber,ph.plotNumberTray AS plotNumberTray,ph.tcpf AS TCPF,
+ph.operationDate AS operationDate,ph.personalCode AS personalCode,ps.codeno AS cropType,v.codeno AS variety,cs.codeno AS cultureStage,
+o.c_uuid AS OutUUId FROM adempiere.tc_primaryhardeningLabel ph
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = ph.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = ph.tc_species_ids
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = ph.tc_culturestage_id
+JOIN adempiere.tc_out o ON o.tc_out_id = ph.tc_out_id
+WHERE ph.ad_client_id = 1000000 AND o.c_uuid = '1401c02b-4701-4511-b643-d6359ba475e5';
+==================================================================================================================================================================
+ Plant details Rejected list show:-
+
+SELECT pd.isrejected,pd.tc_plantdetails_id AS ID,ps.codeno AS PlantSpecieCodeNo,v.codeno AS VarietyCodeNo,pd.codeno AS PlantCodeNo,
+pd.date AS Date,pd.c_uuid AS UUid,pd.bunceweight AS BunchWeight,pd.weight AS Weight,pd.bunchesno AS BunchesNo,pd.tagno AS TagNo,
+pd.diseasename AS DiseaseName,pd.medicinedetails AS MedicineDetails,pd.height AS Height,pd.stature AS Stature,pd.leavesno AS LeavesNo,pd.parentcultureline,
+CASE
+     WHEN pd.isrejected = 'N' THEN 'true'
+     ELSE 'false'
+   END AS Status
+FROM adempiere.tc_plantdetails pd
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = pd.tc_species_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = pd.tc_species_ids
+WHERE pd.ad_client_id = 1000000;
+==================================================================================================================================================================
+Dashboard Visit:-
+SELECT 'Completed' AS Status,
+COUNT(CASE WHEN s.name = 'Completed' THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000 AND v.tc_visittype_id = 1000002 
+UNION ALL
+SELECT 'Cancelled' AS Status,
+COUNT(CASE WHEN s.name = 'Cancelled' THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000 AND v.tc_visittype_id = 1000002 
+UNION ALL
+SELECT 'Upcoming' AS Status,
+COUNT(CASE WHEN s.name = 'On Process' THEN 1 END) AS Count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id
+WHERE v.ad_client_id = 1000000 AND v.tc_visittype_id = 1000002;
+
+
+==================================================================================================================================================================
+SELECT t.name AS Room,lt.name As RoomType,t.m_locatortype_id,
+       ts.name AS status,
+       temperature,
+       humidity,
+       t.ad_client_id,
+       t.ad_org_id
+FROM adempiere.tc_temperatureStatus t
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = t.m_locatortype_id
+JOIN adempiere.tc_tempstatus ts ON ts.tc_tempstatus_id = t.tc_tempstatus_id
+WHERE t.ad_client_id =  1000000  order by t.m_locatortype_id ;
+==================================================================================================================================================================
+SELECT ts.temperature As temp,ts.humidity AS humidity,lo.value As locatorValue,cl.c_uuid AS cultureUUId,cl.personal_code AS personalCode,
+pr.versionno AS inCycle,p.description AS outProductName,pr.description AS inProductName,cs.name AS stageName,cl.cycleno AS cycle,
+cl.cultureoperationdate AS cultureoperationdate,i.created AS indate,o.created AS outdate,pr.value AS inProduct,p.value AS outProduct,
+ps.name AS cropType,v.name AS varietyName,i.tc_in_id,o.tc_out_id,cl.tc_culturelabel_id,i.m_product_id,o.m_product_id 
+FROM adempiere.tc_out o
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id
+JOIN adempiere.tc_culturelabel cl ON cl.tc_out_id = o.tc_out_id
+JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl.tc_culturestage_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = cl.tc_species_ids
+JOIN adempiere.m_product p ON p.m_product_id = o.m_product_id
+JOIN adempiere.m_product pr ON pr.m_product_id = i.m_product_id
+JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+JOIN (SELECT ts.m_locatortype_id,MAX(ts.created) AS max_created
+FROM adempiere.tc_temperaturestatus ts GROUP BY ts.m_locatortype_id
+) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+WHERE o.ad_client_id = 1000000 AND o.c_uuid = '6a35f1f3-1344-4e66-8f3a-5a7fa911ad4e' ORDER BY ts.created DESC;
+==================================================================================================================================================================
+WITH RECURSIVE cte AS (
+-- Anchor query
+SELECT l.parentuuid, l.tc_in_id, l.tc_out_id,l.c_uuid,lo.value As location,l.created,l.cycleno,ps.name As cropType,cs.name As stage,v.name As variety,
+    l.personal_code,ts.temperature As temp,ts.humidity AS humidity
+FROM adempiere.tc_culturelabel l
+    JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+    JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+    JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+    JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+JOIN (SELECT ts.m_locatortype_id,MAX(ts.created) AS max_created
+FROM adempiere.tc_temperaturestatus ts GROUP BY ts.m_locatortype_id
+) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+WHERE l.c_uuid = '32f0ba8d-1c87-49e0-b2d8-970634eb5732'
+
+UNION ALL
+
+-- Recursive query
+SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id,t2.c_uuid,lo.value As location,t2.created,t2.cycleno,ps.name As cropType,cs.name As stage,v.name As variety,
+    t2.personal_code,ts.temperature As temp,ts.humidity AS humidity
+    
+FROM cte t1
+JOIN adempiere.tc_culturelabel t2
+ON t1.parentuuid = t2.c_uuid
+    JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+    JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+    JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+    JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+JOIN (SELECT ts.m_locatortype_id,MAX(ts.created) AS max_created
+FROM adempiere.tc_temperaturestatus ts GROUP BY ts.m_locatortype_id
+) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+)
+SELECT * FROM cte;
+==================================================================================================================================================================
+ If you remove any field 1 record to other record then use this code 
+ This code is show 1 record all data and remain record not show in JasperReport.
+ <printWhenExpression><![CDATA[$V{REPORT_COUNT} == 1]]></printWhenExpression>
+==================================================================================================================================================================
+
+WITH RECURSIVE cte AS (
+  -- Anchor query
+  SELECT l.parentuuid, l.tc_in_id, l.tc_out_id, l.c_uuid, lo.value AS location, l.created, l.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         l.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 1 AS level
+  FROM adempiere.tc_culturelabel l
+  JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+  WHERE l.c_uuid =  'd442bb6f-0e35-4dd7-92d6-991e213ce9d4' AND l.ad_client_id =  1000000
+
+  UNION ALL
+
+  -- Recursive query
+  SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id, t2.c_uuid, lo.value AS location, t2.created, t2.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         t2.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 2 AS level
+  FROM cte t1
+  JOIN adempiere.tc_culturelabel t2 ON t1.parentuuid = t2.c_uuid
+  JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+)
+SELECT cte.*
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+UNION ALL
+SELECT tcc.parentuuid, tcc.tc_in_id, tcc.tc_out_id, tcc.c_uuid, null as location, tcc.created, cte.cycleno, cte.cropType, pr.name, cte.variety, tcc.personalcode, null as temp, null as humidity, 3 AS level
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+join adempiere.tc_out eo on eo.tc_out_id = tcc.tc_out_id
+Join adempiere.m_product pr on pr.m_product_id = eo.m_product_id
+WHERE tcc.c_uuid IS NOT NULL order by created desc;
+
+
+
+==================================================================================================================================================================
+WITH RECURSIVE cte AS (
+  -- Anchor query
+  SELECT l.parentuuid, l.tc_in_id, l.tc_out_id, l.c_uuid, lo.value AS location, l.created, l.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         l.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 1 AS level
+  FROM adempiere.tc_culturelabel l
+  JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+  WHERE l.c_uuid =  '32f0ba8d-1c87-49e0-b2d8-970634eb5732' AND l.ad_client_id =  1000000
+
+  UNION ALL
+
+  -- Recursive query
+  SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id, t2.c_uuid, lo.value AS location, t2.created, t2.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         t2.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 2 AS level
+  FROM cte t1
+  JOIN adempiere.tc_culturelabel t2 ON t1.parentuuid = t2.c_uuid
+  JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+)
+
+SELECT cte.*
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+UNION ALL
+SELECT tcc.parentuuid, tcc.tc_in_id, tcc.tc_out_id, tcc.c_uuid, NULL AS location, tcc.created, cte.cycleno, cte.cropType, pr.name, cte.variety, tcc.personalcode, NULL AS temp, NULL AS humidity, 3 AS level
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+JOIN adempiere.tc_out eo ON eo.tc_out_id = tcc.tc_out_id
+JOIN adempiere.m_product pr ON pr.m_product_id = eo.m_product_id
+UNION ALL
+SELECT null AS parentuuid, NULL AS tc_in_id, NULL AS tc_out_id, tpt.c_uuid, NULL AS location, tpt.created, NULL AS cycleno, NULL AS cropType,'Plant Tag', NULL AS variety, NULL AS personal_code, NULL AS temp, NULL AS humidity, 4 AS level
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid
+LEFT JOIN adempiere.tc_planttag tpt ON tcc.parentuuid = tpt.c_uuid
+WHERE tpt.c_uuid IS NOT NULL
+ORDER BY created DESC;
+
+
+==================================================================================================================================================================
+Jasoer working Query:
+WITH RECURSIVE cte AS (
+  -- Anchor query
+  SELECT l.parentuuid, l.tc_in_id, l.tc_out_id, l.c_uuid, lo.value AS location, l.created, l.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         l.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 1 AS level
+  FROM adempiere.tc_culturelabel l
+  JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+  WHERE l.c_uuid =   $P{CultureLabelUUId} AND l.ad_client_id =  $P{AD_CLIENT_ID} 
+
+  UNION ALL
+
+  -- Recursive query
+  SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id, t2.c_uuid, lo.value AS location, t2.created, t2.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         t2.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 2 AS level
+  FROM cte t1
+  JOIN adempiere.tc_culturelabel t2 ON t1.parentuuid = t2.c_uuid
+  JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+)
+SELECT * FROM cte;
+
+
+==================================================================================================================================================================
+Working Query:-
+
+WITH RECURSIVE cte AS (
+SELECT l.parentuuid,l.tc_in_id,l.tc_out_id,l.c_uuid,lo.value AS location,l.created,l.cycleno,ps.name AS cropType,cs.name AS stage,v.name AS variety,l.personal_code,
+ts.temperature AS temp,ts.humidity AS humidity,1 AS level FROM adempiere.tc_culturelabel l JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+WHERE l.c_uuid = 'd442bb6f-0e35-4dd7-92d6-991e213ce9d4' AND l.ad_client_id = 1000000
+AND DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus) 
+UNION ALL
+SELECT t2.parentuuid,t2.tc_in_id,t2.tc_out_id,t2.c_uuid,lo.value AS location,
+t2.created,t2.cycleno,ps.name AS cropType,cs.name AS stage,v.name AS variety,t2.personal_code,ts.temperature AS temp,ts.humidity AS humidity,cte.level + 1 AS level FROM cte 
+JOIN adempiere.tc_culturelabel t2 ON cte.parentuuid = t2.c_uuid JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+WHERE DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus))
+SELECT cte.parentuuid,cte.tc_in_id,cte.tc_out_id,cte.c_uuid,cte.location,cte.created,cte.cycleno,cte.cropType,cte.stage,cte.variety,cte.personal_code,
+MIN(cte.temp) AS min_temperature,MAX(cte.temp) AS max_temperature,MIN(cte.humidity) AS min_humidity,MAX(cte.humidity) AS max_humidity,cte.level FROM cte 
+GROUP BY cte.parentuuid,cte.tc_in_id,cte.tc_out_id,cte.c_uuid,cte.location,
+cte.created,cte.cycleno,cte.cropType,cte.stage,cte.variety,cte.personal_code,cte.level
+UNION ALL
+SELECT DISTINCT tcc.parentuuid,tcc.tc_in_id,tcc.tc_out_id,tcc.c_uuid,lo.value AS location,tcc.created,cte.cycleno,cte.cropType,pr.name,
+cte.variety,tcc.personalcode,NULL AS min_temperature,NULL AS max_temperature,NULL AS min_humidity,NULL AS max_humidity,cte.level FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid JOIN adempiere.tc_out eo ON eo.tc_out_id = tcc.tc_out_id
+JOIN adempiere.m_locator lo ON lo.m_locator_id = eo.m_locator_id JOIN adempiere.m_product pr ON pr.m_product_id = eo.m_product_id
+UNION ALL
+SELECT DISTINCT null AS parentuuid,0 AS tc_in_id,0 AS tc_out_id,tpt.c_uuid,NULL AS location,tpt.created,0 AS cycleno,cte.cropType,'Plant Tag' AS stage,cte.variety,
+NULL AS personal_code,NULL AS min_temperature,NULL AS max_temperature,NULL AS min_humidity,NULL AS max_humidity,cte.level FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid LEFT JOIN adempiere.tc_planttag tpt ON tcc.parentuuid = tpt.c_uuid
+WHERE tpt.c_uuid IS NOT NULL ORDER BY created DESC;
+
+
+Details Query for best understanding:-
+WITH RECURSIVE cte AS (
+    SELECT 
+        l.parentuuid,
+        l.tc_in_id,
+        l.tc_out_id,
+        l.c_uuid,
+        lo.value AS location,
+        l.created,
+        l.cycleno,
+        ps.name AS cropType,
+        cs.name AS stage,
+        v.name AS variety,
+        l.personal_code,
+        ts.temperature AS temp,
+        ts.humidity AS humidity,
+        1 AS level
+    FROM 
+        adempiere.tc_culturelabel l
+    JOIN 
+        adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+    JOIN 
+        adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+    JOIN 
+        adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+    JOIN 
+        adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+    JOIN 
+        adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+    JOIN 
+        adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+    JOIN 
+        adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+    WHERE 
+        l.c_uuid = 'd442bb6f-0e35-4dd7-92d6-991e213ce9d4' 
+        AND 
+        l.ad_client_id = 1000000
+        AND 
+        DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus)  
+    
+    UNION ALL
+    
+    SELECT 
+        t2.parentuuid,
+        t2.tc_in_id,
+        t2.tc_out_id,
+        t2.c_uuid,
+        lo.value AS location,
+        t2.created,
+        t2.cycleno,
+        ps.name AS cropType,
+        cs.name AS stage,
+        v.name AS variety,
+        t2.personal_code,
+        ts.temperature AS temp,
+        ts.humidity AS humidity,
+        cte.level + 1 AS level  -- Incrementing the level
+    FROM 
+        cte 
+    JOIN 
+        adempiere.tc_culturelabel t2 ON cte.parentuuid = t2.c_uuid
+    JOIN 
+        adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+    JOIN 
+        adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+    JOIN 
+        adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+    JOIN 
+        adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+    JOIN 
+        adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+    JOIN 
+        adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+    JOIN 
+        adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+    WHERE 
+        DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus)
+)
+SELECT 
+    cte.parentuuid,
+    cte.tc_in_id,
+    cte.tc_out_id,
+    cte.c_uuid,
+    cte.location,
+    cte.created,
+    cte.cycleno,
+    cte.cropType,
+    cte.stage,
+    cte.variety,
+    cte.personal_code,
+    MIN(cte.temp) AS min_temperature,
+    MAX(cte.temp) AS max_temperature,
+    MIN(cte.humidity) AS min_humidity,
+    MAX(cte.humidity) AS max_humidity,
+    cte.level
+FROM 
+    cte 
+GROUP BY 
+    cte.parentuuid,
+    cte.tc_in_id,
+    cte.tc_out_id,
+    cte.c_uuid,
+    cte.location,
+    cte.created,
+    cte.cycleno,
+    cte.cropType,
+    cte.stage,
+    cte.variety,
+    cte.personal_code,
+    cte.level
+
+UNION ALL
+
+SELECT 
+    DISTINCT tcc.parentuuid,
+    tcc.tc_in_id,
+    tcc.tc_out_id,
+    tcc.c_uuid,
+    lo.value AS location,
+    tcc.created,
+    cte.cycleno,
+    cte.cropType,
+    pr.name,
+    cte.variety,
+    tcc.personalcode,
+    NULL AS min_temperature,
+    NULL AS max_temperature,
+    NULL AS min_humidity,
+    NULL AS max_humidity,
+    cte.level
+FROM 
+    cte
+LEFT JOIN 
+    adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid
+JOIN 
+    adempiere.tc_out eo ON eo.tc_out_id = tcc.tc_out_id
+JOIN 
+    adempiere.m_locator lo ON lo.m_locator_id = eo.m_locator_id
+JOIN 
+    adempiere.m_product pr ON pr.m_product_id = eo.m_product_id
+
+UNION ALL
+
+SELECT 
+    DISTINCT null AS parentuuid,
+    0 AS tc_in_id,
+    0 AS tc_out_id,
+    tpt.c_uuid,
+    NULL AS location,
+    tpt.created,
+    0 AS cycleno,
+    cte.cropType,
+    'Plant Tag' AS stage,
+    cte.variety,
+    NULL AS personal_code,
+    NULL AS min_temperature,
+    NULL AS max_temperature,
+    NULL AS min_humidity,
+    NULL AS max_humidity,
+    cte.level
+FROM 
+    cte
+LEFT JOIN 
+    adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid
+LEFT JOIN 
+    adempiere.tc_planttag tpt ON tcc.parentuuid = tpt.c_uuid
+WHERE 
+    tpt.c_uuid IS NOT NULL
+
+==================================================================================================================================================================
+Count of Visit completed,cancelled and In Progress:-
+
+select s.name from adempiere.tc_visit v
+join adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+
+----------------------------------------------------------------------
+
+SELECT TO_CHAR(v.created, 'YYYY-MM') AS month,
+    SUM(CASE WHEN s.name = 'Completed' THEN 1 ELSE 0 END) AS completed_count,
+    SUM(CASE WHEN s.name = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count,
+    SUM(CASE WHEN s.name = 'In Progress' THEN 1 ELSE 0 END) AS in_process_count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+GROUP BY TO_CHAR(v.created, 'YYYY-MM')
+ORDER BY month;
+ ----------------------------------------------------------------------   
+SELECT TO_CHAR(v.created, 'YYYY-MM-DD') AS day,
+    SUM(CASE WHEN s.name = 'Completed' THEN 1 ELSE 0 END) AS completed_count,
+    SUM(CASE WHEN s.name = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count,
+    SUM(CASE WHEN s.name = 'In Progress' THEN 1 ELSE 0 END) AS in_process_count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+GROUP BY TO_CHAR(v.created, 'YYYY-MM-DD')
+ORDER BY day;
+----------------------------------------------------------------------
+SELECT TO_CHAR(v.created, 'IYYY-IW') AS week,
+    SUM(CASE WHEN s.name = 'Completed' THEN 1 ELSE 0 END) AS completed_count,
+    SUM(CASE WHEN s.name = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count,
+    SUM(CASE WHEN s.name = 'In Progress' THEN 1 ELSE 0 END) AS in_process_count
+FROM adempiere.tc_visit v
+JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+GROUP BY TO_CHAR(v.created, 'IYYY-IW')
+ORDER BY week;
+
+==================================================================================================================================================================
+Count of Culture Label:-
+select * from adempiere.tc_culturelabel l
+where l.isdiscarded = 'N'
+
+SELECT TO_CHAR(l.created, 'YYYY-MM') AS month,COUNT(*) AS label_count
+FROM adempiere.tc_culturelabel l WHERE l.isdiscarded = 'N'
+GROUP BY TO_CHAR(l.created, 'YYYY-MM') ORDER BY month;
+    
+SELECT TO_CHAR(l.created, 'YYYY-MM-DD') AS day,COUNT(*) AS label_count
+FROM adempiere.tc_culturelabel l WHERE l.isdiscarded = 'N'
+GROUP BY TO_CHAR(l.created, 'YYYY-MM-DD') ORDER BY day;
+    
+SELECT TO_CHAR(l.created, 'IYYY-IW') AS week,COUNT(*) AS record_count
+FROM adempiere.tc_culturelabel l WHERE l.isdiscarded = 'N'
+GROUP BY TO_CHAR(l.created, 'IYYY-IW') ORDER BY week;
+    
+SELECT TO_CHAR(DATE_TRUNC('week', l.created) + INTERVAL '1 day', 'YYYY-MM-DD') AS week_start,COUNT(*) AS record_count
+FROM adempiere.tc_culturelabel l WHERE l.isdiscarded = 'N'
+GROUP BY TO_CHAR(DATE_TRUNC('week', l.created) + INTERVAL '1 day', 'YYYY-MM-DD') ORDER BY week_start;
+
+==================================================================================================================================================================
+SELECT 
+    pt.cr_parenttest_id,
+    pt.cr_parenttest_uu,
+    pt.name,
+    array_agg( ct.cr_childtest_id
+    ) AS child_records
+FROM 
+    adempiere.cr_parenttest pt
+JOIN 
+    adempiere.cr_jointest jt ON jt.cr_parenttest_id = pt.cr_parenttest_id
+JOIN 
+    adempiere.cr_childtest ct ON jt.cr_childtest_id = ct.cr_childtest_id
+GROUP BY 
+    pt.cr_parenttest_id,
+    pt.cr_parenttest_uu,
+    pt.name;
+
+
+==================================================================================================================================================================
+CREATE TABLE adempiere.tc_intermediatejoinplant (
+    tc_intermediatejoinplant_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_intermediatejoinplant_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby NUMERIC(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    tc_plantdetails_id NUMERIC(10,0),
+    tc_intermediatevisit_id NUMERIC(10,0),
+    FOREIGN KEY (tc_plantdetails_id) REFERENCES adempiere.tc_plantdetails(tc_plantdetails_id),
+    FOREIGN KEY (tc_intermediatevisit_id) REFERENCES adempiere.tc_intermediatevisit(tc_intermediatevisit_id)
+    );
+    
+    select ijp.tc_intermediatejoinplant_id,ijp.tc_plantdetails_id,ijp.tc_intermediatevisit_id from adempiere.tc_intermediatejoinplant ijp
+    join adempiere.tc_plantdetails pd ON pd.tc_plantdetails_id = ijp.tc_plantdetails_id
+    join adempiere.tc_intermediatevisit iv On iv.tc_intermediatevisit_id = ijp.tc_intermediatevisit_id
+    where ijp.isactive = 'Y'
+    
+    select ijp.tc_intermediatejoinplant_id,ijp.tc_plantdetails_id from adempiere.tc_intermediatejoinplant ijp
+    join adempiere.tc_plantdetails pd ON pd.tc_plantdetails_id = ijp.tc_plantdetails_id
+    where pd.c_uuid = '38eb0063-e159-4b7b-8a40-609187bee886'
+
+
+
+==================================================================================================================================================================
+select iv.tc_intermediatevisit_id,iv.c_uuid,iv.reviewdetails,iv.reasondetails,iv.tc_visit_id,iv.tc_farmer_id,iv.tc_decision_id,pd.tc_plantdetails_id,pd.isrejected from adempiere.tc_intermediatevisit iv
+join adempiere.tc_intermediatejoinplant ij On ij.tc_intermediatevisit_id = iv.tc_intermediatevisit_id
+join adempiere.tc_plantdetails pd On pd.tc_plantdetails_id = ij.tc_plantdetails_id
+where pd.isrejected = 'N' and iv.c_uuid = 'e174c7d4-9ea1-4399-a629-31afd02e1d6a';
+
+
+select iv.tc_intermediatevisit_id,pd.tc_plantdetails_id from adempiere.tc_intermediatevisit iv
+join adempiere.tc_intermediatejoinplant ij On ij.tc_intermediatevisit_id = iv.tc_intermediatevisit_id
+join adempiere.tc_plantdetails pd On pd.tc_plantdetails_id = ij.tc_plantdetails_id
+where pd.isrejected = 'N' and iv.c_uuid = 'e174c7d4-9ea1-4399-a629-31afd02e1d6a';
+
+
+==================================================================================================================================================================
+CREATE OR REPLACE FUNCTION get_status(filter TEXT)
+RETURNS TABLE(
+    period TEXT,
+    completed_count INTEGER,
+    cancelled_count INTEGER,
+    in_progress_count INTEGER
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        TO_CHAR(
+            CASE
+                WHEN filter = 'day' THEN date_trunc('day', v.created)
+                WHEN filter = 'week' THEN date_trunc('week', v.created)
+                WHEN filter = 'month' THEN date_trunc('month', v.created)
+                WHEN filter = 'year' THEN date_trunc('year', v.created)
+                WHEN filter = 'quarter' THEN date_trunc('quarter', v.created)
+                ELSE date_trunc('day', v.created) -- default to day if no valid filter is provided
+            END,
+            'DD/MM/YYYY'
+        ) AS period,
+        CAST(SUM(CASE WHEN s.name = 'Completed' THEN 1 ELSE 0 END) AS INTEGER) AS completed_count,
+        CAST(SUM(CASE WHEN s.name = 'Cancelled' THEN 1 ELSE 0 END) AS INTEGER) AS cancelled_count,
+        CAST(SUM(CASE WHEN s.name = 'In Progress' THEN 1 ELSE 0 END) AS INTEGER) AS in_progress_count
+    FROM
+        adempiere.tc_visit v
+    JOIN
+        adempiere.tc_status s ON s.tc_status_id = v.tc_status_id
+    GROUP BY
+        period
+    ORDER BY
+        period;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM get_status('day');
+SELECT * FROM get_status('week');
+SELECT * FROM get_status('month');
+SELECT * FROM get_status('year');
+SELECT * FROM get_status('quarter');
+
+
 
 ==================================================================================================================================================================
 
+
+==================================================================================================================================================================    
+
+
+
 ==================================================================================================================================================================
+Old Jasper Tracebility Database:-
+WITH RECURSIVE cte AS (
+  -- Anchor query
+  SELECT l.parentuuid, l.tc_in_id, l.tc_out_id, l.c_uuid, lo.value AS location, l.created, l.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         l.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 1 AS level
+  FROM adempiere.tc_culturelabel l
+  JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+  WHERE l.c_uuid =   $P{CultureLabelUUId}  AND l.ad_client_id =   $P{AD_CLIENT_ID} 
+
+  UNION ALL
+
+  -- Recursive query
+  SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id, t2.c_uuid, lo.value AS location, t2.created, t2.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
+         t2.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 2 AS level
+  FROM cte t1
+  JOIN adempiere.tc_culturelabel t2 ON t1.parentuuid = t2.c_uuid
+  JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
+  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
+  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
+  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
+  JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
+  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
+  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
+       FROM adempiere.tc_temperaturestatus ts
+       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
+  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
+)
+
+SELECT cte.*
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+UNION ALL
+SELECT tcc.parentuuid, tcc.tc_in_id, tcc.tc_out_id, tcc.c_uuid, NULL AS location, tcc.created, cte.cycleno, cte.cropType, pr.name, cte.variety, tcc.personalcode, NULL AS temp, NULL AS humidity, 3 AS level
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc
+ON cte.parentuuid = tcc.c_uuid
+JOIN adempiere.tc_out eo ON eo.tc_out_id = tcc.tc_out_id
+JOIN adempiere.m_product pr ON pr.m_product_id = eo.m_product_id
+UNION ALL
+SELECT null AS parentuuid, NULL AS tc_in_id, NULL AS tc_out_id, tpt.c_uuid, NULL AS location, tpt.created, NULL AS cycleno, cte.cropType,'Plant Tag',cte.variety, NULL AS personal_code, NULL AS temp, NULL AS humidity, 4 AS level
+FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid
+LEFT JOIN adempiere.tc_planttag tpt ON tcc.parentuuid = tpt.c_uuid
+WHERE tpt.c_uuid IS NOT NULL
+ORDER BY created DESC;
 
 ==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
 
-==================================================================================================================================================================
 
 ==================================================================================================================================================================
 
-==================================================================================================================================================================
 
 ==================================================================================================================================================================
 
