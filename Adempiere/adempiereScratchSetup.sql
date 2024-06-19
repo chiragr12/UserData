@@ -11,8 +11,9 @@ New adempiere setup :-
 
 4. open an Eclipse project and import idempiere project
 
-5. go to window -> preference -> search enter Tyco and jre and check two configure java-11 choose or not if not choose please select java-11 and apply and close
-   
+5. go to window -> preference -> search enter Tycho Configurator and jre and check two configure java-11 choose or not if not choose please select java-11 and apply and close
+   set java 11 path
+   /usr/lib/jvm/java-11-amazon-corretto
    window->preference->maven->Discovery->open catalog->Tycho Configurator and complete to system restart
 
 6. org.idempiere.p2.targetplatform (this folder is base folder of all project )

@@ -66,85 +66,6 @@ where b.m_product_id = 1000028 and c.issotrx = 'N' and b.c_bpartner_id = 1000015
 
 
 ===================================================================================================================================
-Client/Tenant all details query:-
-
-SELECT * FROM adempiere.AD_Client WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Calendar WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Costtype WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Year WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Period WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_AcctSchema WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Bp_Group WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_PaymentTerm WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.AD_ClientInfo WHERE AD_Client_ID = 1000001
-//not show some id like ad_tree_menu_id,ad_tree_org_id,ad_tree_bpartner_id,ad_tree_project_id,ad_tree_salesregion_id,ad_tree_product_id,m_product_freight_id,
-c_bpartnercashtrx_id,ad_tree_activity_id,ad_tree_campaign_id
-
-SELECT * FROM adempiere.AD_Org WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.M_Warehouse WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Warehouse_Acct WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.C_BPartner WHERE C_BPartner_ID IN (1000013,1000014,1000015,1000016,1000017)
-//Business Partner throw error because po_paymentterm_id not show in c_bpartner_id = 1000015
-
-SELECT * FROM adempiere.AD_User WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.M_Product_Category WHERE M_Product_Category_ID IN (1000004,1000005)
-SELECT * FROM adempiere.C_TaxCategory WHERE C_TaxCategory_ID = 1000001
-
-SELECT * FROM adempiere.M_Lotctl WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Sernoctl WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_AttributeSet WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Product WHERE M_Product_ID IN (1000028,1000029)
-//salesrep_id not find
-
-
-SELECT * FROM adempiere.C_Region WHERE C_Region_ID IN (1000000,1000001)
-SELECT * FROM adempiere.C_City WHERE C_City_ID IN (1000000,1000001)
-SELECT * FROM adempiere.C_Location WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_BPartner_Location WHERE AD_Client_ID = 1000001
-
-//if region,city and location added then add orgInfo.
-SELECT * FROM adempiere.AD_OrgInfo WHERE AD_Client_ID = 1000001
-
-
-SELECT * FROM adempiere.C_DocType WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_DocType_Trl WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_PriceList WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.C_Order WHERE AD_Client_ID = 1000001
-//salesrep_id,bill_bpartner_id,bill_location_id,bill_user_id (not find direct table)
-
-SELECT * FROM adempiere.C_Tax WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Uom WHERE C_Uom_ID = 100
-SELECT * FROM adempiere.C_OrderLine WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.C_OrderTax WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.M_Lot WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_AttributeSetInstance WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.M_LocatorType WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Locator WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_StorageOnHand WHERE AD_Client_ID = 1000001
-
-SELECT * FROM adempiere.C_Bank WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_BankAccount WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Payment WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.C_Invoice WHERE AD_Client_ID = 1000001
-//salesrep_id not find this column
-
-SELECT * FROM adempiere.M_Movement WHERE AD_Client_ID = 1000001
-//m_warehouseto_id not find table
-SELECT * FROM adempiere.M_MovementLine WHERE AD_Client_ID = 1000001
-//m_locatorto_id not find table
-
-SELECT * FROM adempiere.M_InOut WHERE AD_Client_ID = 1000001
-//salesrep_id not find table
-SELECT * FROM adempiere.M_InOutLine WHERE AD_Client_ID = 1000001
-SELECT * FROM adempiere.M_Transaction WHERE AD_Client_ID = 1000001
 
 
 ==================================================================================================================================================================
@@ -1755,83 +1676,6 @@ Display Column - KishanName (Your Requirement what are you Display in list)
 sql where - c_kishan.c_kishan_id<>0 
 
 
-==================================================================================================================================================================
-
-
-CREATE TABLE adempiere.c_variety (
-    c_variety_id numeric(10,0) NOT NULL PRIMARY KEY,
-    ad_client_id NUMERIC(10, 0) NOT NULL,
-    ad_org_id NUMERIC(10, 0) NOT NULL,
-    VarietyName VARCHAR(25) NOT NULL,
-    CodeNo NUMERIC(10, 0) NOT NULL,
-    Created TIMESTAMP without time zone DEFAULT now() not null,
-    Createdby numeric(10,0) not null,
-    Updated TIMESTAMP without time zone DEFAULT now() not null,
-    Updatedby NUMERIC(10,0) not null,
-    Description VARCHAR(255),
-    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,  
-    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar);
-    
-    
-    CREATE TABLE adempiere.c_species (
-    c_species_id numeric(10,0) NOT NULL PRIMARY KEY,
-    ad_client_id NUMERIC(10, 0) NOT NULL,
-    ad_org_id NUMERIC(10, 0) NOT NULL,
-    PlantSpeciesName VARCHAR(25) NOT NULL,
-    CodeNo NUMERIC(10, 0) NOT NULL, 
-    Created TIMESTAMP without time zone DEFAULT now() not null,
-    Createdby numeric(10,0) not null,
-    Updated TIMESTAMP without time zone DEFAULT now() not null,
-    Updatedby NUMERIC(10,0) not null,
-    Description VARCHAR(255),
-    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
-    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
-    c_variety_id numeric(10,0),
-    FOREIGN KEY (c_variety_id) REFERENCES adempiere.c_variety(c_variety_id));
-    
-    CREATE TABLE adempiere.c_plant (
-    c_plant_id numeric(10,0) NOT NULL PRIMARY KEY,
-    ad_client_id NUMERIC(10, 0) NOT NULL,
-    ad_org_id NUMERIC(10, 0) NOT NULL,
-    PlantName VARCHAR(25) NOT NULL,
-    Created TIMESTAMP without time zone DEFAULT now() not null,
-    Createdby numeric(10,0) not null,
-    Updated TIMESTAMP without time zone DEFAULT now() not null,
-    Updatedby NUMERIC(10,0) not null,
-    Description VARCHAR(255),
-    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
-    isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
-    c_species_id numeric(10,0),
-    c_species_ids numeric(10,0),
-    FOREIGN KEY (c_species_id) REFERENCES adempiere.c_species(c_species_id),
-    FOREIGN KEY (c_species_ids) REFERENCES adempiere.c_species(c_species_id));
-
-CREATE TABLE adempiere.pi_productLabelss (
-    pi_productLabelss_ID SERIAL PRIMARY KEY,
-    ad_client_ID NUMERIC(10, 0) NOT NULL,
-    ad_org_ID NUMERIC(10, 0) NOT NULL,
-    created timestamp without time zone NOT NULL DEFAULT now(),
-    createdby numeric(10,0) NOT NULL,
-    updated timestamp without time zone NOT NULL DEFAULT now(),
-    updatedby numeric(10,0) NOT NULL,
-    qcPassed varchar(1),
-    quantity NUMERIC,
-    m_product_ID NUMERIC(10,0),
-    m_locator_ID NUMERIC(10,0),
-    c_orderline_ID NUMERIC(10,0) NULL,
-    m_inoutline_ID NUMERIC(10,0) NULL,
-    issotrx varchar(1),
-    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
-    labelUUId varchar(255),
-    FOREIGN KEY (ad_client_iD) REFERENCES adempiere.ad_client(ad_client_id),
-    FOREIGN KEY (ad_org_iD) REFERENCES adempiere.ad_org(ad_org_id),
-    FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
-    FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
-    FOREIGN KEY (m_product_ID) REFERENCES adempiere.m_product(m_product_id),
-    FOREIGN KEY (m_locator_ID) REFERENCES adempiere.m_locator(m_locator_ID),
-    FOREIGN KEY (c_orderline_ID) REFERENCES adempiere.c_orderline(c_orderline_id),
-    FOREIGN KEY (m_inoutline_ID) REFERENCES adempiere.m_inoutline(m_inoutline_id)
-);
 // If not use in isactive field window is not proper working
 
 
@@ -1983,7 +1827,7 @@ select * from adempiere.tc_hardeningdetail
 ==================================================================================================================================================================
 Added FOREIGN KEY in any other table:-
 
-ALTER TABLE tc_collectiondetails
+ALTER TABLE adempiere.tc_collectiondetails
 ADD COLUMN tc_plantdetails_id NUMERIC(10,0);
 
 ALTER TABLE adempiere.tc_collectiondetails
@@ -3555,7 +3399,44 @@ why
 if i had any mistake please suggest me and solve my problem
 
 ==================================================================================================================================================================
+Search option in Tissue culture All Farmar List API:-
+StringBuilder sql = new StringBuilder("SELECT \n"
+                    + "    tc_farmer_id AS id,\n"
+                    + "    name AS farmerName,\n"
+                    + "    mobileno AS mobileNo,\n"
+                    + "    villagename AS villageName,\n"
+                    + "    address AS address,\n"
+                    + "    landmark AS landmark \n"
+                    + "FROM \n"
+                    + "    adempiere.tc_farmer\n"
+                    + "WHERE \n"
+                    + "    AD_Client_Id = " + AD_Client_Id + " \n");
 
+            if (searchKey != null && !searchKey.trim().isEmpty()) {
+                sql.append("    AND (name ILIKE '%' || ? || '%' \n"
+                        + "    OR villagename ILIKE '%' || ? || '%' \n"
+                        + "    OR address ILIKE '%' || ? || '%' \n"
+                        + "    OR landmark ILIKE '%' || ? || '%') ");
+            }
+            pstm = DB.prepareStatement(sql.toString(), null);
+            if (searchKey != null && !searchKey.trim().isEmpty()) {
+            pstm.setString(1, searchKey);
+            pstm.setString(2, searchKey);
+            pstm.setString(3, searchKey);
+            pstm.setString(4, searchKey);
+            }
+            rs = pstm.executeQuery();
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
+==================================================================================================================================================================            
 
 ==================================================================================================================================================================
 @Override

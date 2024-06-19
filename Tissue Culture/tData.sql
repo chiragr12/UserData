@@ -5,7 +5,7 @@
     tc_farmer_uu VARCHAR(36) DEFAULT NULL::bpchar,
     ad_client_id NUMERIC(10, 0) NOT NULL,
     ad_org_id NUMERIC(10, 0) NOT NULL,
-    name VARCHAR(25) NOT NULL,
+    name VARCHAR(25),
     created TIMESTAMP without time zone DEFAULT now() not null,
     createdby numeric(10,0) not null,
     updated TIMESTAMP without time zone DEFAULT now() not null,
@@ -17,7 +17,7 @@
     landmark VARCHAR(100),
     surveyNo VARCHAR(10),
     villageName VARCHAR(50),
-    mobileNo NUMERIC(10))
+    mobileNo VARCHAR(10))
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,;
 
 
@@ -135,10 +135,13 @@ First Visit:-
     date DATE,
     tc_farmer_id NUMERIC(10,0),
     tc_visittype_id NUMERIC(10,0),
+    tc_status_id NUMERIC(10,0),
+    FOREIGN KEY (tc_status_id) REFERENCES adempiere.tc_status(tc_status_id),
     FOREIGN KEY (tc_visittype_id) REFERENCES adempiere.tc_visittype(tc_visittype_id),
     FOREIGN KEY (tc_farmer_id) REFERENCES adempiere.tc_farmer(tc_farmer_id)); 
     
     
+    ALTER TABLE adempiere.tc_firstvisit ALTER COLUMN plantNo DROP NOT NULL;
     First Visit Table:-
     
     CREATE TABLE adempiere.tc_firstvisit (
@@ -249,6 +252,7 @@ First Visit:-
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
     isdefault character(1) NOT NULL DEFAULT 'N'::bpchar,
+    isrejected CHAR(1) NOT NULL DEFAULT 'N'::bpchar,
     tc_species_id NUMERIC(10,0),
     tc_species_ids NUMERIC(10,0),
     tc_farmer_id NUMERIC(10,0),
@@ -305,8 +309,6 @@ First Visit:-
     tc_farmer_id NUMERIC(10,0),
     tc_decision_id NUMERIC(10,0),
     tc_firstvisit_id NUMERIC(10,0),
-    tc_plantdetails_id NUMERIC(10,0),
-    FOREIGN KEY (tc_plantdetails_id) REFERENCES adempiere.tc_plantdetails(tc_plantdetails_id),
     FOREIGN KEY (tc_visit_id) REFERENCES adempiere.tc_visit(tc_visit_id),
     FOREIGN KEY (tc_farmer_id) REFERENCES adempiere.tc_farmer(tc_farmer_id),
     FOREIGN KEY (tc_firstvisit_id) REFERENCES
@@ -327,7 +329,6 @@ First Visit:-
     updated TIMESTAMP without time zone DEFAULT now() not null,
     updatedby NUMERIC(10,0) not null,
     yieldWeight VARCHAR(255),
-    suckerNo NUMERIC(10,0),
     description VARCHAR(255),
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
@@ -336,8 +337,6 @@ First Visit:-
     tc_farmer_id NUMERIC(10,0),
     tc_intermediatevisit_id NUMERIC(10,0),
     tc_firstvisit_id NUMERIC(10,0),
-    tc_plantdetails_id NUMERIC(10,0),
-    FOREIGN KEY (tc_plantdetails_id) REFERENCES adempiere.tc_plantdetails(tc_plantdetails_id),
     FOREIGN KEY (tc_visit_id) REFERENCES adempiere.tc_visit(tc_visit_id),
     FOREIGN KEY (tc_farmer_id) REFERENCES adempiere.tc_farmer(tc_farmer_id),
     FOREIGN KEY (tc_firstvisit_id) REFERENCES
@@ -672,6 +671,16 @@ First Visit:-
 
         ALTER TABLE adempiere.tc_qualitycheck ADD COLUMN CultureLabelUUId VARCHAR(36);
 
+        ALTER TABLE adempiere.tc_mediaLabelQr
+        ADD COLUMN discardDate DATE,
+        ADD COLUMN tcpf2 VARCHAR(25),
+        ADD COLUMN personalCode2 VARCHAR(25);
+
+        ALTER TABLE adempiere.tc_cultureLabel
+        ADD COLUMN discardDate DATE,
+        ADD COLUMN tcpf2 VARCHAR(25),
+        ADD COLUMN personalCode2 VARCHAR(25);
+
 
 
         //MediaData:-
@@ -754,9 +763,13 @@ First Visit:-
     updatedby numeric(10,0) NOT NULL,
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    isdiscarded CHAR(1) NOT NULL DEFAULT 'N'::bpchar
     parentCultureLine VARCHAR(255),
     cultureDate DATE,
     cycleNo NUMERIC(10,0),
+    discardDate DATE,
+    tcpf2 VARCHAR(25),
+    personalCode2 VARCHAR(25),
     tc_species_id NUMERIC(10,0),
     tc_species_ids NUMERIC(10,0),
     tc_naturesample_id NUMERIC(10,0),
@@ -854,9 +867,13 @@ First Visit:-
     updatedby numeric(10,0) NOT NULL,
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    isdiscarded CHAR(1) NOT NULL DEFAULT 'N'::bpchar,
     tcpf VARCHAR(25),
     operationDate DATE,
     personalCode VARCHAR(25),
+    discardDate DATE,
+    tcpf2 VARCHAR(25),
+    personalCode2 VARCHAR(25),
     tc_machinetype_id NUMERIC(10,0),
     tc_mediatype_id NUMERIC(10,0),
     tc_medialine_id NUMERIC(10,0),
@@ -864,6 +881,8 @@ First Visit:-
     FOREIGN KEY (tc_machinetype_id) REFERENCES adempiere.tc_machinetype(tc_machinetype_id),
     FOREIGN KEY (tc_mediatype_id) REFERENCES adempiere.tc_mediatype(tc_mediatype_id)
     );
+
+        Alter Table adempiere.ad_user Add column personalCode VARCHAR(10);
 
         Alter Table adempiere.tc_medialabelQr Add column discardReason VARCHAR(50); 
 
@@ -975,6 +994,41 @@ CREATE TABLE adempiere.tc_status (
         c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
 
+CREATE TABLE adempiere.tc_temperatureposition (
+        tc_temperatureposition_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        tc_temperatureposition_uu VARCHAR(36) DEFAULT NULL::bpchar,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        name varchar(25),
+        created TIMESTAMP without time zone DEFAULT now() not null,
+        createdby NUMERIC(10,0) not null,
+        updated TIMESTAMP without time zone DEFAULT now() not null,
+        updatedby NUMERIC(10,0) not null,
+        description VARCHAR(255),
+        isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+        c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+        isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
+
+CREATE TABLE adempiere.tc_devicedata (
+    tc_devicedata_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_devicedata_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name varchar(25),value varchar(25),
+    deviceid varchar(25),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    m_locatortype_id NUMERIC(10,0),
+    tc_temperatureposition_id NUMERIC(10,0),
+    FOREIGN KEY (m_locatortype_id) REFERENCES adempiere.m_locatortype(m_locatortype_id),
+    FOREIGN KEY (tc_temperatureposition_id) REFERENCES adempiere.tc_temperatureposition(tc_temperatureposition_id)
+);
+
 ALTER TABLE adempiere.tc_visit ADD COLUMN tc_status_id NUMERIC(10,0) ;
 ALTER TABLE adempiere.tc_visit
 ADD CONSTRAINT tc_visit_tc_status_id_fkey
@@ -1073,6 +1127,26 @@ add column parentUUid VARCHAR(36) DEFAULT NULL::bpchar;
 ALTER TABLE adempiere.tc_firstvisit
 ADD COLUMN enterDetailsOfInfestation VARCHAR(30);
 
+CREATE TABLE adempiere.tc_firstjoinplant (
+    tc_firstjoinplant_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_firstjoinplant_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby NUMERIC(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    tc_plantdetails_id NUMERIC(10,0),
+    tc_firstvisit_id NUMERIC(10,0),
+    tc_plantstatus_id NUMERIC(10,0),
+    FOREIGN KEY (tc_plantstatus_id) REFERENCES adempiere.tc_plantstatus(tc_plantstatus_id),
+    FOREIGN KEY (tc_plantdetails_id) REFERENCES adempiere.tc_plantdetails(tc_plantdetails_id),
+    FOREIGN KEY (tc_firstvisit_id) REFERENCES adempiere.tc_firstvisit(tc_firstvisit_id)
+    );
+
 
 CREATE TABLE adempiere.tc_intermediatejoinplant (
     tc_intermediatejoinplant_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
@@ -1136,6 +1210,22 @@ ALTER TABLE adempiere.tc_collectionjoinplant
 ADD CONSTRAINT tc_collectionjoinplant_tc_plantstatus_id_fkey
 FOREIGN KEY (tc_plantstatus_id)
 REFERENCES adempiere.tc_plantstatus(tc_plantstatus_id);
+
+CREATE TABLE adempiere.tc_columnfield (
+        tc_columnfield_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        tc_columnfield_uu VARCHAR(36) DEFAULT NULL::bpchar,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        name varchar(25),value varchar(25),
+        created TIMESTAMP without time zone DEFAULT now() not null,
+        createdby NUMERIC(10,0) not null,
+        updated TIMESTAMP without time zone DEFAULT now() not null,
+        updatedby NUMERIC(10,0) not null,
+        description VARCHAR(255),
+        isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+        isfarmerfield CHAR(1) not null DEFAULT 'N'::bpchar,
+        isvisitfield CHAR(1) NOT NULL DEFAULT 'N'::bpchar,
+        isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
 
 
 
