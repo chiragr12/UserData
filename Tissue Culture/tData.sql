@@ -1060,6 +1060,8 @@ CREATE TABLE adempiere.tc_temperature (
     FOREIGN KEY (m_locatortype_id) REFERENCES adempiere.m_locatortype(m_locatortype_id)
 );
 
+Alter Table adempiere.tc_temperatureStatus Add column deviceid varchar(25);
+
 CREATE TABLE adempiere.tc_temperatureStatus (
     tc_temperatureStatus_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
     tc_temperatureStatus_uu VARCHAR(36) DEFAULT NULL::bpchar,
