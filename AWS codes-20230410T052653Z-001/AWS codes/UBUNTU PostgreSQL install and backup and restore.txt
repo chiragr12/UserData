@@ -23,3 +23,5 @@ pg_dump -d databaseName -U postgres -p 5432 -Fc -f /var/lib/postgresql/folder/fi
 cd folder
 ls
 pg_restore -d databaseName -U postgres /var/lib/postgressql/folder/file.sql
+
+psql --version

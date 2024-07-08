@@ -1009,6 +1009,19 @@ CREATE TABLE adempiere.tc_temperatureposition (
         c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
 
+CREATE TABLE adempiere.tc_sensortype (
+    tc_sensortype_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_sensortype_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar);
+
 CREATE TABLE adempiere.tc_devicedata (
     tc_devicedata_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
     tc_devicedata_uu VARCHAR(36) DEFAULT NULL::bpchar,
@@ -1025,6 +1038,28 @@ CREATE TABLE adempiere.tc_devicedata (
     c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
     m_locatortype_id NUMERIC(10,0),
     tc_temperatureposition_id NUMERIC(10,0),
+    FOREIGN KEY (m_locatortype_id) REFERENCES adempiere.m_locatortype(m_locatortype_id),
+    FOREIGN KEY (tc_temperatureposition_id) REFERENCES adempiere.tc_temperatureposition(tc_temperatureposition_id)
+);
+
+CREATE TABLE adempiere.tc_devicedata (
+    tc_devicedata_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_devicedata_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name varchar(25),frequency VARCHAR(30),
+    deviceid varchar(25),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    m_locatortype_id NUMERIC(10,0),
+    tc_temperatureposition_id NUMERIC(10,0),
+    tc_sensortype_id NUMERIC(10,0),
+    FOREIGN KEY (tc_sensortype_id) REFERENCES adempiere.tc_sensortype(tc_sensortype_id),
     FOREIGN KEY (m_locatortype_id) REFERENCES adempiere.m_locatortype(m_locatortype_id),
     FOREIGN KEY (tc_temperatureposition_id) REFERENCES adempiere.tc_temperatureposition(tc_temperatureposition_id)
 );
@@ -1129,6 +1164,10 @@ add column parentUUid VARCHAR(36) DEFAULT NULL::bpchar;
 ALTER TABLE adempiere.tc_firstvisit
 ADD COLUMN enterDetailsOfInfestation VARCHAR(30);
 
+Alter table adempiere.tc_visit add column reason VARCHAR(36);
+
+Alter table adempiere.tc_plantdetails add column reason VARCHAR(36);
+
 CREATE TABLE adempiere.tc_firstjoinplant (
     tc_firstjoinplant_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
     tc_firstjoinplant_uu VARCHAR(36) DEFAULT NULL::bpchar,
@@ -1181,6 +1220,19 @@ CREATE TABLE adempiere.tc_plantstatus (
         description VARCHAR(255),
         isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
         c_uuId VARCHAR(36) DEFAULT NULL::bpchar);
+
+CREATE TABLE adempiere.tc_labelName (
+        tc_labelName_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        tc_labelName_uu VARCHAR(36) DEFAULT NULL::bpchar,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        name varchar(25),
+        created TIMESTAMP without time zone DEFAULT now() not null,
+        createdby NUMERIC(10,0) not null,
+        updated TIMESTAMP without time zone DEFAULT now() not null,
+        updatedby NUMERIC(10,0) not null,
+        description VARCHAR(255),
+        isactive CHAR(1) not null DEFAULT 'Y'::bpchar);
 
 ALTER TABLE adempiere.tc_intermediatejoinplant ADD COLUMN tc_plantstatus_id NUMERIC(10,0) ;
 ALTER TABLE adempiere.tc_intermediatejoinplant

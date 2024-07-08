@@ -3291,13 +3291,353 @@ SELECT * FROM get_status('quarter');
 
 
 ==================================================================================================================================================================
+Avarage Time Plant tag to suckerno:-
+WITH InitialCollection AS (
+    SELECT pt.tc_planttag_id, pt.c_uuid, pt.created AS initial_collection_date
+    FROM adempiere.tc_planttag pt
+),
+PlantDetailsDates AS (
+    SELECT cs.tc_plantdetails_id, cs.plantTagUUId, cs.created AS plantDetails_date
+    FROM adempiere.tc_plantdetails cs
+    JOIN adempiere.tc_planttag pt ON pt.c_uuid = cs.plantTagUUId
+    WHERE cs.plantTagUUId = pt.c_uuid
+),    
+SuckerCollectionDates AS (
+    SELECT sc.tc_plantdetails_id, sc.suckerNo, sc.created AS sucker_collection_date
+    FROM adempiere.tc_collectionjoinplant sc
+    JOIN adempiere.tc_plantdetails pt ON pt.tc_plantdetails_id = sc.tc_plantdetails_id
+)
+SELECT 
+    ROUND(AVG(EXTRACT(EPOCH FROM (scd.sucker_collection_date - ic.initial_collection_date)) / 86400),2) AS avg_duration_days
+FROM InitialCollection ic
+JOIN PlantDetailsDates crd ON ic.c_uuid = crd.plantTagUUId    
+JOIN SuckerCollectionDates scd ON crd.tc_plantdetails_id = scd.tc_plantdetails_id;
+
+
+------------------------------------------------------------------
+Show full datils not show only avarage days:-
+WITH InitialCollection AS (
+    SELECT pt.tc_planttag_id, pt.c_uuid, pt.created AS initial_collection_date
+    FROM adempiere.tc_planttag pt
+),
+PlantDetailsDates AS (
+    SELECT cs.tc_plantdetails_id, cs.plantTagUUId, cs.created AS plantDetails_date
+    FROM adempiere.tc_plantdetails cs
+    JOIN adempiere.tc_planttag pt ON pt.c_uuid = cs.plantTagUUId
+    WHERE cs.plantTagUUId = pt.c_uuid
+),    
+SuckerCollectionDates AS (
+    SELECT sc.tc_plantdetails_id, sc.suckerNo, sc.created AS sucker_collection_date
+    FROM adempiere.tc_collectionjoinplant sc
+    JOIN adempiere.tc_plantdetails pt ON pt.tc_plantdetails_id = sc.tc_plantdetails_id
+)
+SELECT 
+    ic.initial_collection_date,
+    crd.plantDetails_date,
+    scd.sucker_collection_date,
+    ROUND(EXTRACT(EPOCH FROM (scd.sucker_collection_date - ic.initial_collection_date)) / 86400,2) AS duration_days
+FROM InitialCollection ic
+JOIN PlantDetailsDates crd ON ic.c_uuid = crd.plantTagUUId    
+JOIN SuckerCollectionDates scd ON crd.tc_plantdetails_id = scd.tc_plantdetails_id;
+
 
 
 ==================================================================================================================================================================    
+Time get plant tag to multiplication culture label:-
+WITH InitialCollection AS (
+    SELECT pt.tc_planttag_id, pt.c_uuid, pt.created AS initial_collection_date FROM adempiere.tc_planttag pt),
+PlantDetailsDates AS (
+    SELECT cs.tc_plantdetails_id, cs.plantTagUUId, cs.created AS plantDetails_date FROM adempiere.tc_plantdetails cs
+    JOIN adempiere.tc_planttag pt ON pt.c_uuid = cs.plantTagUUId WHERE cs.plantTagUUId = pt.c_uuid
+),    
+SuckerCollectionDates AS (
+    SELECT sc.tc_plantdetails_id, sc.suckerNo, sc.created AS sucker_collection_date FROM adempiere.tc_collectionjoinplant sc
+    JOIN adempiere.tc_plantdetails pt ON pt.tc_plantdetails_id = sc.tc_plantdetails_id
+),
+explantDates As (
+    SELECT el.c_uuid AS explantuuid,el.parentuuid As parentuuid,el.created AS explant_date FROM adempiere.tc_explantlabel el
+    JOIN adempiere.tc_planttag pt ON pt.c_uuid = el.parentuuid
+),
+initialcultureDates As (
+    SELECT cl.c_uuid AS initialcultureuuid,cl.parentuuid As inicultureparentuuid,cl.created AS iniculture_date FROM adempiere.tc_culturelabel cl
+    JOIN adempiere.tc_explantlabel el ON el.c_uuid = cl.parentuuid
+),
+initial2cultureDates As (
+    SELECT cl2.c_uuid AS initial2cultureuuid,cl2.parentuuid As ini2cultureparentuuid,cl2.created AS ini2culture_date FROM adempiere.tc_culturelabel cl2
+    JOIN adempiere.tc_culturelabel cl ON cl.c_uuid = cl2.parentuuid
+),
+mulcultureDates As (
+    SELECT clm.c_uuid AS mulcultureuuid,clm.parentuuid As mulcultureparentuuid,clm.created AS mulculture_date FROM adempiere.tc_culturelabel clm
+    JOIN adempiere.tc_culturelabel cl ON cl.c_uuid = clm.parentuuid
+)   
+SELECT ic.initial_collection_date,crd.plantDetails_date,scd.sucker_collection_date,eld.explant_date,cld.iniculture_date,cld2.ini2culture_date,clmd.mulculture_date,
+ROUND(EXTRACT(EPOCH FROM (scd.sucker_collection_date - ic.initial_collection_date)) / 86400,2) AS duration_days
+FROM InitialCollection ic
+JOIN PlantDetailsDates crd ON ic.c_uuid = crd.plantTagUUId    
+JOIN SuckerCollectionDates scd ON crd.tc_plantdetails_id = scd.tc_plantdetails_id
+JOIN explantDates eld ON eld.parentuuid = crd.plantTagUUId
+JOIN initialcultureDates cld ON cld.inicultureparentuuid = eld.explantuuid
+JOIN initial2cultureDates cld2 ON cld2.ini2cultureparentuuid = cld.initialcultureuuid   
+JOIN mulcultureDates clmd ON clmd.mulcultureparentuuid = cld2.initial2cultureuuid   ;
+
+============================================================================================================================================
+User Management Report:-
+SELECT users, userId, personalCode, date, id, labelName
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,u.personalCode AS personalCode,cl.created AS date,cl.tc_culturelabel_id AS id,'Culture Label' AS labelName
+FROM adempiere.tc_culturelabel cl JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby WHERE cl.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,el.createdby AS userId,u.personalcode AS personalCode,el.created AS date,el.tc_explantlabel_id AS id,'Explant Label' AS labelName
+FROM adempiere.tc_explantlabel el JOIN adempiere.ad_user u ON u.ad_user_id = el.createdby WHERE el.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,ml.createdby AS userId,u.personalcode AS personalCode,ml.created AS date,ml.tc_medialabelQr_id AS id,'Media Label' AS labelName
+FROM adempiere.tc_medialabelQr ml JOIN adempiere.ad_user u ON u.ad_user_id = ml.createdby WHERE ml.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,pr.createdby AS userId,u.personalcode AS personalCode,pr.created AS date,pr.tc_primaryhardeningLabel_id AS id,'Primary Hardening' AS labelName
+FROM adempiere.tc_primaryhardeningLabel pr JOIN adempiere.ad_user u ON u.ad_user_id = pr.createdby WHERE pr.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,sr.createdby AS userId,u.personalcode AS personalCode,sr.created AS date,sr.tc_secondaryhardeningLabel_id AS id,'Secondary Hardening' AS labelName
+FROM adempiere.tc_secondaryhardeningLabel sr JOIN adempiere.ad_user u ON u.ad_user_id = sr.createdby WHERE sr.AD_CLIENT_ID = 1000000    
+UNION ALL
+SELECT u.name AS users,fv.createdby AS userId,u.personalcode AS personalCode,fv.created AS date,fv.tc_firstvisit_id AS id,'First Visit' AS labelName
+FROM adempiere.tc_firstvisit fv JOIN adempiere.ad_user u ON u.ad_user_id = fv.createdby WHERE fv.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,iv.createdby AS userId,u.personalcode AS personalCode,iv.created AS date,iv.tc_intermediatevisit_id AS id,'Intermediate Visit' AS labelName
+FROM adempiere.tc_intermediatevisit iv JOIN adempiere.ad_user u ON u.ad_user_id = iv.createdby WHERE iv.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,cv.createdby AS userId,u.personalcode AS personalCode,cv.created AS date,cv.tc_collectiondetails_id AS id,'Collection Visit' AS labelName
+FROM adempiere.tc_collectiondetails cv JOIN adempiere.ad_user u ON u.ad_user_id = cv.createdby WHERE cv.AD_CLIENT_ID = 1000000  
+) AS combined ORDER BY users,date;
+
+===============================================================================
+SELECT users, userId, personalCode, date, id, labelName
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,cl.personal_code AS personalCode,cl.created AS date,cl.tc_culturelabel_id AS id,'Culture Label' AS labelName
+FROM adempiere.tc_culturelabel cl JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby WHERE cl.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,el.createdby AS userId,el.personalcode AS personalCode,el.created AS date,el.tc_explantlabel_id AS id,'Explant Label' AS labelName
+FROM adempiere.tc_explantlabel el JOIN adempiere.ad_user u ON u.ad_user_id = el.createdby WHERE el.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,ml.createdby AS userId,ml.personalcode AS personalCode,ml.created AS date,ml.tc_medialabelQr_id AS id,'Media Label' AS labelName
+FROM adempiere.tc_medialabelQr ml JOIN adempiere.ad_user u ON u.ad_user_id = ml.createdby WHERE ml.AD_CLIENT_ID = 1000000
+) AS combined WHERE labelName = 'Media Label' ORDER BY users;
+
+====================================================================================
+Jasper Working Fine:-
+SELECT users, userId, personalCode, date, id, labelName
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,cl.personal_code AS personalCode,cl.created AS date,cl.tc_culturelabel_id AS id,'Culture Label' AS labelName
+FROM adempiere.tc_culturelabel cl JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby WHERE cl.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,el.createdby AS userId,el.personalcode AS personalCode,el.created AS date,el.tc_explantlabel_id AS id,'Explant Label' AS labelName
+FROM adempiere.tc_explantlabel el JOIN adempiere.ad_user u ON u.ad_user_id = el.createdby WHERE el.AD_CLIENT_ID = 1000000
+UNION ALL
+SELECT u.name AS users,ml.createdby AS userId,ml.personalcode AS personalCode,ml.created AS date,ml.tc_medialabelQr_id AS id,'Media Label' AS labelName
+FROM adempiere.tc_medialabelQr ml JOIN adempiere.ad_user u ON u.ad_user_id = ml.createdby WHERE ml.AD_CLIENT_ID = 1000000
+) AS combined WHERE ($P{Label} IS NULL OR combined.labelName = $P{Label}) ORDER BY users;
+
+===========================================================================================
+SELECT users, userId, personalCode, date,orderId, id, labelName,countValue
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,cl.created AS date,
+o.tc_order_id As orderID,cl.tc_culturelabel_id AS id,'Culture Label' AS labelName,
+COUNT(*) OVER (PARTITION BY cl.created, o.tc_order_id) AS countValue FROM adempiere.tc_culturelabel cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_out o ON o.tc_out_id = cl.tc_out_id
+WHERE cl.AD_CLIENT_ID = 1000000 AND u.personalcode is not null
+UNION ALL
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,cl.created AS date,
+o.tc_mediaorder_id As orderID,cl.tc_medialabelQr_id AS id,'Media Label' AS labelName,
+COUNT(*) OVER (PARTITION BY cl.created, o.tc_mediaorder_id) AS countValue FROM adempiere.tc_medialabelQr cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_medialine o ON o.tc_medialine_id = cl.tc_medialine_id
+WHERE cl.AD_CLIENT_ID = 1000000 AND u.personalcode is not null
+) AS combined WHERE labelName = 'Media Label' ORDER BY users,date;
+==============================================================================================
+-----------------------------------------------------------------------------------------------
+Final Working Query in JAsper Report:-
+SELECT users, userId, personalCode, date,orderId, id, labelName,countValue,counts
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,Date(cl.created) AS date,
+o.tc_order_id As orderID,cl.tc_culturelabel_id AS id,'Culture Role' AS labelName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cl.created), o.tc_order_id,u.name) AS NUMERIC) AS countValue,COUNT(*) OVER (PARTITION BY cl.created, o.tc_order_id,u.name) AS counts FROM adempiere.tc_culturelabel cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_out o ON o.tc_out_id = cl.tc_out_id
+WHERE cl.AD_CLIENT_ID = $P{AD_CLIENT_ID}  AND u.personalcode is not null
+UNION ALL
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,Date(cl.created) AS date,
+o.tc_mediaorder_id As orderID,cl.tc_medialabelQr_id AS id,'Media Role' AS labelName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cl.created), o.tc_mediaorder_id,u.name) AS NUMERIC) AS countValue,COUNT(*) OVER (PARTITION BY cl.created, o.tc_mediaorder_id,u.name) AS counts FROM adempiere.tc_medialabelQr cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_medialine o ON o.tc_medialine_id = cl.tc_medialine_id
+WHERE cl.AD_CLIENT_ID = $P{AD_CLIENT_ID} AND u.personalcode is not null
+) AS combined WHERE combined.date > $P{FromDate} AND combined.date < $P{ToDate} 
+ AND ($P{Label} IS NULL OR combined.labelName = $P{Label})  ORDER BY users,date,orderId;
+
+==================================================================================================================================================================
+Field Officer:-
+SELECT users,userId,date,id,PlantID,visitName,countvalue,counts
+FROM (
+SELECT u.name As Users,fv.createdby As userId,fv.created As date,fv.tc_firstvisit_id AS id,fj.tc_plantdetails_id AS PlantID,'First Visit' AS visitName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(fv.created), fv.tc_firstvisit_id,u.name) AS NUMERIC) AS countvalue,COUNT(*) OVER (PARTITION BY fv.created, fv.tc_firstvisit_id,u.name,fj.tc_firstjoinplant_id) AS counts FROM adempiere.tc_firstvisit fv
+JOIN adempiere.ad_user u ON u.ad_user_id = fv.createdby
+JOIN adempiere.tc_firstjoinplant fj ON fj.tc_firstvisit_id = fv.tc_firstvisit_id    
+WHERE fv.ad_client_id = 1000000 AND fj.tc_plantdetails_id is not null 
+UNION ALL
+SELECT u.name As Users,iv.createdby As userId,iv.created As date,iv.tc_intermediatevisit_id,ij.tc_plantdetails_id AS PlantID,'Intermediate Visit' AS visitName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(iv.created), iv.tc_intermediatevisit_id,u.name) AS NUMERIC) AS countvalue,COUNT(*) OVER (PARTITION BY iv.created, iv.tc_intermediatevisit_id,u.name,ij.tc_intermediatejoinplant_id) AS counts FROM adempiere.tc_intermediatevisit iv
+JOIN adempiere.ad_user u ON u.ad_user_id = iv.createdby
+JOIN adempiere.tc_intermediatejoinplant ij ON ij.tc_intermediatevisit_id = iv.tc_intermediatevisit_id   
+WHERE iv.ad_client_id = 1000000 AND ij.tc_plantdetails_id is not null 
+UNION ALL
+SELECT u.name As Users,cv.createdby As userId,cv.created As date,cv.tc_collectiondetails_id,cj.tc_plantdetails_id AS PlantID,'Collection Visit' AS visitName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cv.created), cv.tc_collectiondetails_id,u.name) AS NUMERIC) AS countvalue,COUNT(*) OVER (PARTITION BY cv.created, cv.tc_collectiondetails_id,u.name,cj.tc_collectionjoinplant_id) AS counts FROM adempiere.tc_collectiondetails cv
+JOIN adempiere.ad_user u ON u.ad_user_id = cv.createdby
+JOIN adempiere.tc_collectionjoinplant cj ON cj.tc_collectiondetails_id = cv.tc_collectiondetails_id 
+WHERE cv.ad_client_id = 1000000 AND cj.tc_plantdetails_id is not null 
+) AS combined WHERE visitName = 'Intermediate Visit' ORDER BY users,date,id;
+==================================================================================================================================================================
+GrowthRoom update:-
+SELECT v.name,ord.tc_variety_id,ord.culturecode,v.codeno,COALESCE(SUM(o.discardqty), 0) AS Contamination,i_pr.name AS stageAndCycle,
+    COALESCE(SUM(CASE WHEN DATE_TRUNC('month', i.created) != DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0) AS OpeningStock,
+    COALESCE(SUM(CASE WHEN DATE_TRUNC('month', i.created) = DATE_TRUNC('month', NOW()) THEN i.quantity ELSE 0 END), 0) AS Stocked,
+    COALESCE(SUM(CASE WHEN o_pr.name LIKE 'N%' OR o_pr.name LIKE 'BI%' THEN o.quantity ELSE 0 END), 0) AS ToCT,
+    COALESCE(SUM(CASE WHEN o_pr.name LIKE 'M%' OR o_pr.name LIKE 'BM%' THEN o.quantity ELSE 0 END), 0) AS M,
+    COALESCE(SUM(CASE WHEN o_pr.name LIKE 'E%' OR o_pr.name LIKE 'BE%' THEN o.quantity ELSE 0 END), 0) AS E,
+    COALESCE(SUM(CASE WHEN o_pr.name LIKE 'R%' OR o_pr.name LIKE 'BR%' THEN o.quantity ELSE 0 END), 0) AS R,
+    COALESCE(SUM(CASE WHEN o_pr.name LIKE 'H%' OR o_pr.name LIKE 'H0%' THEN o.quantity ELSE 0 END), 0) AS Hardning,
+    i.ad_client_id,i.ad_org_id,MAX(DATE(i.created)) AS orderDate
+FROM adempiere.tc_order ord JOIN adempiere.tc_variety v ON v.tc_variety_id = ord.tc_variety_id
+JOIN adempiere.tc_out o ON o.tc_order_id = ord.tc_order_id JOIN adempiere.m_product o_pr ON o.m_product_id = o_pr.m_product_id
+JOIN adempiere.tc_in i ON i.tc_in_id = o.tc_in_id JOIN adempiere.m_product i_pr ON i.m_product_id = i_pr.m_product_id
+WHERE ord.ad_client_id = 1000000 AND o.created > '2024-03-01' AND o.created < '2024-07-08'
+GROUP BY v.name,ord.tc_variety_id,ord.culturecode,v.codeno,i_pr.name,i.ad_client_id,i.ad_org_id ORDER BY v.codeno;
+
+==================================================================================================================================================================
+Sucker Count Api:-
+
+GetFORoleReportSuckerCountResponseDocument getFORoleReportSuckerCountResponseDocument = GetFORoleReportSuckerCountResponseDocument.Factory.newInstance();
+        GetFORoleReportSuckerCountResponse getFORoleReportSuckerCountResponse = getFORoleReportSuckerCountResponseDocument.addNewGetFORoleReportSuckerCountResponse();
+        GetFORoleReportSuckerCountRequest loginRequest = req.getGetFORoleReportSuckerCountRequest();
+        ADLoginRequest login = loginRequest.getADLoginRequest();
+        String user = login.getUser();
+        int clientId = login.getClientID();
+        String userInput = loginRequest.getUserInput();
+        String serviceType = loginRequest.getServiceType();
+        PreparedStatement pstm = null;
+        ResultSet rs = null;
+        Trx trx = null;
+        try {
+            getCompiereService().connect();
+            String trxName = Trx.createTrxName(getClass().getName() + "_");
+            trx = Trx.get(trxName, true);
+            trx.start();
+            String err = login(login, webServiceName, "getReport", serviceType);
+            if (err != null && err.length() > 0) {
+                getFORoleReportSuckerCountResponse.setError(err);
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+            if (!serviceType.equalsIgnoreCase("getReport")) {
+                getFORoleReportSuckerCountResponse.setError("Service type " + serviceType + " not configured");
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+            String sql = null;
+            
+            if(userInput.equals("day")) {
+                sql = "SELECT day_info.day_name AS day_name,COALESCE(SUM(cv.suckerno), 0) AS sucker_count\n"
+                        + "FROM (SELECT to_char(current_date, 'Day') AS day_name) AS day_info\n"
+                        + "LEFT JOIN adempiere.tc_collectionjoinplant cv ON cv.created::date = current_date AND cv.ad_client_id = "+clientId+"\n"
+                        + "AND cv.createdby IN (SELECT ad_user_id FROM adempiere.ad_user WHERE name = '"+user+"') GROUP BY day_info.day_name;";
+            }else if(userInput.equals("week")) {
+                sql = "WITH days AS (SELECT generate_series(0, 6) AS day_of_week),\n"
+                        + "sucker_counts AS (\n"
+                        + "SELECT date_trunc('day', v.created) AS visit_day,to_char(v.created, 'FMDay') AS day_name,\n"
+                        + "EXTRACT(dow FROM v.created) AS day_of_week,SUM(v.suckerno) AS visit_count\n"
+                        + "FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= current_date - interval '6 days' AND v.created::date <= current_date\n"
+                        + "GROUP BY date_trunc('day', v.created),to_char(v.created, 'FMDay'),EXTRACT(dow FROM v.created))\n"
+                        + "SELECT current_date - interval '6 days' + d.day_of_week * interval '1 day' AS dates,\n"
+                        + "COALESCE(vc.day_name, to_char(current_date - interval '6 days' + d.day_of_week * interval '1 day', 'FMDay')) AS day_name,\n"
+                        + "COALESCE(vc.visit_count, 0) AS sucker_count FROM days d\n"
+                        + "LEFT JOIN sucker_counts vc ON current_date - interval '6 days' + d.day_of_week * interval '1 day' = vc.visit_day ORDER BY dates;";
+            }else if(userInput.equals("month")) {
+                sql = "WITH weeks AS (SELECT generate_series(0, 4) AS week_number),\n"
+                        + "sucker_counts AS (SELECT date_trunc('week', v.created) AS week_start,to_char(date_trunc('week', v.created), 'YYYY-MM-DD') AS week_start_str,\n"
+                        + "SUM(v.suckerno) AS sucker_count FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= (current_date - interval '29 days') AND v.created::date <= current_date GROUP BY date_trunc('week', v.created)),\n"
+                        + "date_range AS (SELECT (current_date - interval '29 days')::date + generate_series(0, 29) AS day)\n"
+                        + "SELECT to_char(date_trunc('week', day), 'YYYY-MM-DD') AS week_start,COALESCE(vc.sucker_count, 0) AS sucker_count\n"
+                        + "FROM date_range LEFT JOIN sucker_counts vc ON date_trunc('week', day) = vc.week_start\n"
+                        + "GROUP BY date_trunc('week', day), vc.sucker_count ORDER BY week_start;\n"
+                        + "";
+            }else if(userInput.equals("year")) {
+                sql = "WITH months AS (SELECT generate_series(0, 11) AS month),\n"
+                        + "sucker_counts AS (\n"
+                        + "SELECT date_trunc('month', v.created) AS month_year,to_char(v.created, 'FMMonth') AS month_name,SUM(v.suckerno) AS sucker_count\n"
+                        + "FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= (current_date - interval '364 days') \n"
+                        + "AND v.created::date <= current_date GROUP BY date_trunc('month', v.created), to_char(v.created, 'FMMonth'))\n"
+                        + "SELECT to_char(date_trunc('month', current_date) - (m.month || ' months')::interval, 'FMMonth') AS month_name,COALESCE(vc.sucker_count, 0) AS sucker_count \n"
+                        + "FROM months m LEFT JOIN sucker_counts vc \n"
+                        + "ON date_trunc('month', current_date) - (m.month || ' months')::interval = vc.month_year\n"
+                        + "ORDER BY date_trunc('month', current_date) - (m.month || ' months')::interval;";
+            }else if(userInput.equals("all")) {
+                sql = "SELECT sum(v.suckerno) AS sucker_count FROM adempiere.tc_collectionjoinplant v\n"
+                        + "JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"';";
+            }
+            if (sql == null) {
+                getFORoleReportSuckerCountResponse.setError("No SQL");
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+        
+            pstm = DB.prepareStatement(sql, null);
+            rs = pstm.executeQuery();
+            while (rs.next()) {
+                GetReportDataSuckerCount data = getFORoleReportSuckerCountResponse.addNewGetReportDataSuckerCount();
+                if (userInput.equals("day")) {
+                    String day_name = rs.getString("day_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(day_name);
+                    data.setCount(count);
+                } else if (userInput.equals("week")) {
+                    String days_name = rs.getString("day_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(days_name);
+                    data.setCount(count);
+                } else if (userInput.equals("month")) {
+                    String week_start = rs.getString("week_start");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(week_start);
+                    data.setCount(count);
+                } else if (userInput.equals("year")) {
+                    String month_name = rs.getString("month_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(month_name);
+                    data.setCount(count);
+                } else if (userInput.equals("all")) {
+                    int count = rs.getInt("sucker_count");
+                    data.setCount(count);
+                }
+            }
+        } catch (Exception e) {
+            getFORoleReportSuckerCountResponse.setError(e.getMessage());
+            getFORoleReportSuckerCountResponse.setIsError(true);
+        } finally {
+            trx.close();
+            getCompiereService().disconnect();
+            closeDbCon(pstm, rs);
+        }
+        return getFORoleReportSuckerCountResponseDocument;
+
+==================================================================================================================================================================
 
 
 
 ==================================================================================================================================================================
+
+
+==================================================================================================================================================================
+
 Old Jasper Tracebility Database:-
 WITH RECURSIVE cte AS (
   -- Anchor query
@@ -3355,15 +3695,137 @@ WHERE tpt.c_uuid IS NOT NULL
 ORDER BY created DESC;
 
 ==================================================================================================================================================================
+Get Device Records:-
+SELECT dd.tc_devicedata_id As id,dd.c_uuid AS uuid,dd.name,dd.deviceid,dd.frequency,lt.name AS roomNo,tp.name As cornorType,st.name AS sensorType FROM adempiere.tc_devicedata dd
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = dd.m_locatortype_id
+JOIN adempiere.tc_temperatureposition tp ON tp.tc_temperatureposition_id = dd.tc_temperatureposition_id
+JOIN adempiere.tc_sensortype st ON st.tc_sensortype_id = dd.tc_sensortype_id
+
+==================================================================================================================================================================
+-- week
+WITH days AS (SELECT generate_series(0, 6) AS day_of_week),
+visit_counts AS (
+SELECT date_trunc('day', v.created) AS visit_day,to_char(v.created, 'FMDay') AS day_name,EXTRACT(dow FROM v.created) AS day_of_week,COUNT(*) AS visit_count
+FROM adempiere.tc_culturelabel v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby 
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'SuperUser' AND v.created::date >= current_date - interval '6 days' 
+AND v.created::date <= current_date GROUP BY date_trunc('day', v.created),to_char(v.created, 'FMDay'),EXTRACT(dow FROM v.created))
+SELECT current_date - interval '6 days' + d.day_of_week * interval '1 day' AS dates,
+COALESCE(vc.day_name, to_char(current_date - interval '6 days' + d.day_of_week * interval '1 day', 'FMDay')) AS day_name,COALESCE(vc.visit_count, 0) AS visit_count FROM days d 
+LEFT JOIN visit_counts vc ON date_trunc('day', current_date - interval '6 days' + d.day_of_week * interval '1 day') = vc.visit_day ORDER BY dates;
+
+-- year
+WITH months AS (SELECT generate_series(0, 11) AS month),
+visit_counts AS (
+SELECT date_trunc('month', v.created) AS month_year,to_char(v.created, 'FMMonth') AS month_name,COUNT(*) AS visit_count
+FROM adempiere.tc_culturelabel v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'SuperUser' AND v.created::date >= (current_date - interval '364 days') AND v.created::date <= current_date
+GROUP BY date_trunc('month', v.created), to_char(v.created, 'FMMonth'))
+SELECT to_char(date_trunc('month', current_date) - (m.month || ' months')::interval, 'FMMonth') AS month_name, 
+COALESCE(vc.visit_count, 0) AS visit_count FROM months m 
+LEFT JOIN visit_counts vc ON date_trunc('month', current_date) - (m.month || ' months')::interval = vc.month_year
+ORDER BY date_trunc('month', current_date) - (m.month || ' months')::interval;
+
+-- day
+SELECT day_info.day_name AS day_name,COALESCE(COUNT(v.*), 0) AS visit_count
+FROM (SELECT to_char(current_date, 'FMDay') AS day_name) AS day_info
+LEFT JOIN adempiere.tc_culturelabel v ON v.created::date = current_date AND v.ad_client_id = 1000000 AND v.isdiscarded = 'N'
+AND v.createdby IN (SELECT ad_user_id FROM adempiere.ad_user WHERE name = 'SuperUser')GROUP BY day_info.day_name;
+
+-- all
+SELECT COUNT(*) AS visit_count FROM adempiere.tc_culturelabel v
+JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan'
+
+-- month
+WITH weeks AS (SELECT generate_series(0, 4) AS week_number),
+visit_counts AS (
+SELECT date_trunc('week', v.created) AS week_start,to_char(date_trunc('week', v.created), 'YYYY-MM-DD') AS week_start_str,
+COUNT(*) AS visit_count FROM adempiere.tc_culturelabel v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'SuperUser'  AND v.created::date >= (current_date - interval '29 days') AND v.created::date <= current_date GROUP BY date_trunc('week', v.created)),
+date_range AS (SELECT (current_date - interval '29 days')::date + generate_series(0, 29) AS day)
+SELECT to_char(date_trunc('week', day), 'YYYY-MM-DD') AS week_start,COALESCE(vc.visit_count, 0) AS visit_count
+FROM date_range LEFT JOIN visit_counts vc ON date_trunc('week', day) = vc.week_start
+GROUP BY date_trunc('week', day),vc.visit_count ORDER BY week_start;
+
+
 
 
 ==================================================================================================================================================================
+select * from adempiere.tc_medialabelqr
+-- week
+WITH days AS (SELECT generate_series(0, 6) AS day_of_week),
+visit_counts AS (
+SELECT date_trunc('day', v.created) AS visit_day,to_char(v.created, 'FMDay') AS day_name,EXTRACT(dow FROM v.created) AS day_of_week,COUNT(*) AS visit_count
+FROM adempiere.tc_medialabelqr v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby 
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan' AND v.created::date >= current_date - interval '6 days' 
+AND v.created::date <= current_date GROUP BY date_trunc('day', v.created),to_char(v.created, 'FMDay'),EXTRACT(dow FROM v.created))
+SELECT current_date - interval '6 days' + d.day_of_week * interval '1 day' AS dates,
+COALESCE(vc.day_name, to_char(current_date - interval '6 days' + d.day_of_week * interval '1 day', 'FMDay')) AS day_name,COALESCE(vc.visit_count, 0) AS counts FROM days d 
+LEFT JOIN visit_counts vc ON date_trunc('day', current_date - interval '6 days' + d.day_of_week * interval '1 day') = vc.visit_day ORDER BY dates;
+
+-- year
+WITH months AS (SELECT generate_series(0, 11) AS month),
+visit_counts AS (
+SELECT date_trunc('month', v.created) AS month_year,to_char(v.created, 'FMMonth') AS month_name,COUNT(*) AS visit_count
+FROM adempiere.tc_medialabelqr v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan' AND v.created::date >= (current_date - interval '364 days') AND v.created::date <= current_date
+GROUP BY date_trunc('month', v.created), to_char(v.created, 'FMMonth'))
+SELECT to_char(date_trunc('month', current_date) - (m.month || ' months')::interval, 'FMMonth') AS month_name, 
+COALESCE(vc.visit_count, 0) AS counts FROM months m 
+LEFT JOIN visit_counts vc ON date_trunc('month', current_date) - (m.month || ' months')::interval = vc.month_year
+ORDER BY date_trunc('month', current_date) - (m.month || ' months')::interval;
+
+-- day
+SELECT day_info.day_name AS day_name,COALESCE(COUNT(v.*), 0) AS counts
+FROM (SELECT to_char(current_date, 'FMDay') AS day_name) AS day_info
+LEFT JOIN adempiere.tc_medialabelqr v ON v.created::date = current_date AND v.ad_client_id = 1000000 AND v.isdiscarded = 'N'
+AND v.createdby IN (SELECT ad_user_id FROM adempiere.ad_user WHERE name = 'lavan')GROUP BY day_info.day_name;
+
+-- all
+SELECT COUNT(*) AS counts FROM adempiere.tc_medialabelqr v
+JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan'
+
+-- month
+WITH weeks AS (SELECT generate_series(0, 4) AS week_number),
+counts AS (
+SELECT date_trunc('week', v.created) AS week_start,to_char(date_trunc('week', v.created), 'YYYY-MM-DD') AS week_start_str,
+COUNT(*) AS counts FROM adempiere.tc_medialabelqr v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan'  AND v.created::date >= (current_date - interval '29 days') AND v.created::date <= current_date GROUP BY date_trunc('week', v.created)),
+date_range AS (SELECT (current_date - interval '29 days')::date + generate_series(0, 29) AS day)
+SELECT to_char(date_trunc('week', day), 'YYYY-MM-DD') AS week_start,COALESCE(vc.counts, 0) AS counts
+FROM date_range LEFT JOIN counts vc ON date_trunc('week', day) = vc.week_start
+GROUP BY date_trunc('week', day),vc.counts ORDER BY week_start;
+
+
 
 
 ==================================================================================================================================================================
+Allocate Storage:-
+WITH RoomCapacity AS (SELECT lt.name AS RoomType,COUNT(DISTINCT s.m_locator_id) AS num_locators,
+COUNT(DISTINCT s.m_locator_id) * 40 AS max_capacity FROM adempiere.m_storageonhand s
+JOIN adempiere.m_locator l ON l.m_locator_id = s.m_locator_id
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = l.m_locatortype_id
+WHERE s.ad_client_id = 1000000 AND lt.name IN ('C1', 'C2', 'C3', 'C4')
+GROUP BY lt.name)
+SELECT rc.RoomType,rc.num_locators,rc.max_capacity,COALESCE(SUM(s.qtyonhand), 0) AS total_qtyonhand FROM RoomCapacity rc
+LEFT JOIN adempiere.m_storageonhand s ON s.m_locator_id IN (SELECT l.m_locator_id FROM adempiere.m_locator l 
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = l.m_locatortype_id WHERE lt.name = rc.RoomType)
+GROUP BY rc.RoomType, rc.num_locators, rc.max_capacity ORDER BY rc.RoomType;
 
+===========
+User Specific:-
+WITH RoomCapacity AS (
+    SELECT lt.name AS RoomType,COUNT(DISTINCT l.m_locator_id) AS num_locators,COUNT(DISTINCT l.m_locator_id) * 50 AS max_capacity
+    FROM adempiere.m_locator l JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = l.m_locatortype_id
+    WHERE l.ad_client_id = 1000000 AND lt.name IN ('C1', 'C2', 'C3', 'C4') GROUP BY lt.name)
+SELECT rc.RoomType AS roomType,rc.num_locators,rc.max_capacity,COALESCE(SUM(s.qtyonhand), 0) AS total_qtyonhand,
+ROUND((COALESCE(SUM(s.qtyonhand), 0) / rc.max_capacity::float) * 100) AS percentage_occupied FROM RoomCapacity rc
+LEFT JOIN adempiere.m_locator l ON l.m_locatortype_id = (SELECT m_locatortype_id FROM adempiere.m_locatortype WHERE name = rc.RoomType)
+LEFT JOIN adempiere.m_storageonhand s ON s.m_locator_id = l.m_locator_id 
+JOIN adempiere.ad_user u ON u.ad_user_id = s.createdby  
+WHERE u.name = 'SuperUser' GROUP BY rc.RoomType, rc.num_locators, rc.max_capacity ORDER BY rc.RoomType;
 
-==================================================================================================================================================================
 
 
 ==================================================================================================================================================================
