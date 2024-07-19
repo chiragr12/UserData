@@ -645,6 +645,21 @@ First Visit:-
         -- FOREIGN KEY (tc_cultureoperationdetails_id) REFERENCES
         -- adempiere.tc_cultureoperationdetails(tc_cultureoperationdetails_id));
 
+        ALTER TABLE adempiere.tc_cultureLabel
+        ADD COLUMN tc_discardtype_id NUMERIC(10,0);
+
+        ALTER TABLE adempiere.tc_cultureLabel
+        ADD CONSTRAINT tc_cultureLabel_tc_discardtype_id_fkey
+        FOREIGN KEY (tc_discardtype_id)
+        REFERENCES adempiere.tc_discardtype(tc_discardtype_id);
+
+        ALTER TABLE adempiere.tc_qualitycheck
+ADD COLUMN tc_discardtype_id NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_qualitycheck
+ADD CONSTRAINT tc_qualitycheck_tc_discardtype_id_fkey
+FOREIGN KEY (tc_discardtype_id)
+REFERENCES adempiere.tc_discardtype(tc_discardtype_id);
 
         //QAData:-
 
@@ -910,6 +925,9 @@ ADD CONSTRAINT tc_explantLabel_tc_out_id_fkey
 FOREIGN KEY (tc_out_id)
 REFERENCES adempiere.tc_out(tc_out_id);
 
+
+ALTER TABLE adempiere.tc_primaryhardeningLabel add column lotNumber VARCHAR(1);
+
 //PRIMARY Hardening :-
 CREATE TABLE adempiere.tc_primaryhardeningLabel (
     tc_primaryhardeningLabel_id SERIAL PRIMARY KEY,
@@ -943,6 +961,9 @@ CREATE TABLE adempiere.tc_primaryhardeningLabel (
     FOREIGN KEY (tc_culturestage_id) REFERENCES
      adempiere.tc_culturestage(tc_culturestage_id)
     );
+
+ALTER TABLE adempiere.tc_secondaryhardeningLabel add column serialNumber VARCHAR(5);
+
 
 //Secondery Hardening:-
 CREATE TABLE adempiere.tc_secondaryhardeningLabel (
@@ -1280,6 +1301,20 @@ CREATE TABLE adempiere.tc_columnfield (
         isfarmerfield CHAR(1) not null DEFAULT 'N'::bpchar,
         isvisitfield CHAR(1) NOT NULL DEFAULT 'N'::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
+
+CREATE TABLE adempiere.tc_discardtype (
+    tc_discardtype_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_discardtype_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name varchar(25),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar
+);
 
 
 

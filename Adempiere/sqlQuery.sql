@@ -3629,11 +3629,423 @@ GetFORoleReportSuckerCountResponseDocument getFORoleReportSuckerCountResponseDoc
         }
         return getFORoleReportSuckerCountResponseDocument;
 
+        --------------------------
+        All Modify Query:-
+        WITH year_counts AS (
+SELECT date_trunc('year', v.created) AS year_start,COUNT(*) AS visit_count
+FROM adempiere.tc_culturelabel v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby
+WHERE v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND u.name = 'lavan'
+GROUP BY date_trunc('year', v.created))
+SELECT to_char(year_start, 'YYYY-01-01') AS year_date,visit_count
+FROM year_counts ORDER BY year_start;
+
 ==================================================================================================================================================================
+Currently Working Api for Sucker Count with Excel Download:-
+@Override
+    public GetFORoleReportSuckerCountResponseDocument getFORoleReportSuckerCount(
+            GetFORoleReportSuckerCountRequestDocument req) {
+        GetFORoleReportSuckerCountResponseDocument getFORoleReportSuckerCountResponseDocument = GetFORoleReportSuckerCountResponseDocument.Factory.newInstance();
+        GetFORoleReportSuckerCountResponse getFORoleReportSuckerCountResponse = getFORoleReportSuckerCountResponseDocument.addNewGetFORoleReportSuckerCountResponse();
+        GetFORoleReportSuckerCountRequest loginRequest = req.getGetFORoleReportSuckerCountRequest();
+        ADLoginRequest login = loginRequest.getADLoginRequest();
+        String user = login.getUser();
+        int clientId = login.getClientID();
+        String userInput = loginRequest.getUserInput();
+        String serviceType = loginRequest.getServiceType();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PreparedStatement pstm = null;
+        ResultSet rs = null;
+        Trx trx = null;
+        try {
+            getCompiereService().connect();
+            String trxName = Trx.createTrxName(getClass().getName() + "_");
+            trx = Trx.get(trxName, true);
+            trx.start();
+            String err = login(login, webServiceName, "getReport", serviceType);
+            if (err != null && err.length() > 0) {
+                getFORoleReportSuckerCountResponse.setError(err);
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+            if (!serviceType.equalsIgnoreCase("getReport")) {
+                getFORoleReportSuckerCountResponse.setError("Service type " + serviceType + " not configured");
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+            // Create SXSSFWorkbook
+            SXSSFWorkbook workbook = new SXSSFWorkbook(-1);
+
+            // Create styles
+            CellStyle myStyle = workbook.createCellStyle();
+            org.apache.poi.ss.usermodel.Font myFont = workbook.createFont();
+            myFont.setBold(true);
+            myStyle.setFont(myFont);
+
+            CellStyle wrapStyle = workbook.createCellStyle();
+            wrapStyle.setWrapText(true);
+            // Create sheet and rows
+            SXSSFSheet sheet = workbook.createSheet("Field Officer Visit Count Report");
+            SXSSFRow headerRow = sheet.createRow(0);
+            
+         // Create header cells
+            SXSSFCell cellH0 = headerRow.createCell(0);
+            cellH0.setCellValue("Label Name");
+            cellH0.setCellStyle(myStyle);
+
+            SXSSFCell cellH1 = headerRow.createCell(1);
+            cellH1.setCellValue("Count");
+            cellH1.setCellStyle(myStyle);
+            String sql = null;
+            
+            if(userInput.equals("day")) {
+                sql = "SELECT day_info.day_name AS day_name,COALESCE(SUM(cv.suckerno), 0) AS sucker_count\n"
+                        + "FROM (SELECT to_char(current_date, 'Day') AS day_name) AS day_info\n"
+                        + "LEFT JOIN adempiere.tc_collectionjoinplant cv ON cv.created::date = current_date AND cv.ad_client_id = "+clientId+"\n"
+                        + "AND cv.createdby IN (SELECT ad_user_id FROM adempiere.ad_user WHERE name = '"+user+"') GROUP BY day_info.day_name;";
+            }else if(userInput.equals("week")) {
+                sql = "WITH days AS (SELECT generate_series(0, 6) AS day_of_week),\n"
+                        + "sucker_counts AS (\n"
+                        + "SELECT date_trunc('day', v.created) AS visit_day,to_char(v.created, 'FMDay') AS day_name,\n"
+                        + "EXTRACT(dow FROM v.created) AS day_of_week,SUM(v.suckerno) AS visit_count\n"
+                        + "FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= current_date - interval '6 days' AND v.created::date <= current_date\n"
+                        + "GROUP BY date_trunc('day', v.created),to_char(v.created, 'FMDay'),EXTRACT(dow FROM v.created))\n"
+                        + "SELECT current_date - interval '6 days' + d.day_of_week * interval '1 day' AS dates,\n"
+                        + "COALESCE(vc.day_name, to_char(current_date - interval '6 days' + d.day_of_week * interval '1 day', 'FMDay')) AS day_name,\n"
+                        + "COALESCE(vc.visit_count, 0) AS sucker_count FROM days d\n"
+                        + "LEFT JOIN sucker_counts vc ON current_date - interval '6 days' + d.day_of_week * interval '1 day' = vc.visit_day ORDER BY dates;";
+            }else if(userInput.equals("month")) {
+                sql = "WITH weeks AS (SELECT generate_series(0, 4) AS week_number),\n"
+                        + "sucker_counts AS (SELECT date_trunc('week', v.created) AS week_start,to_char(date_trunc('week', v.created), 'YYYY-MM-DD') AS week_start_str,\n"
+                        + "SUM(v.suckerno) AS sucker_count FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= (current_date - interval '29 days') AND v.created::date <= current_date GROUP BY date_trunc('week', v.created)),\n"
+                        + "date_range AS (SELECT (current_date - interval '29 days')::date + generate_series(0, 29) AS day)\n"
+                        + "SELECT to_char(date_trunc('week', day), 'YYYY-MM-DD') AS week_start,COALESCE(vc.sucker_count, 0) AS sucker_count\n"
+                        + "FROM date_range LEFT JOIN sucker_counts vc ON date_trunc('week', day) = vc.week_start\n"
+                        + "GROUP BY date_trunc('week', day), vc.sucker_count ORDER BY week_start;\n"
+                        + "";
+            }else if(userInput.equals("year")) {
+                sql = "WITH months AS (SELECT generate_series(0, 11) AS month),\n"
+                        + "sucker_counts AS (\n"
+                        + "SELECT date_trunc('month', v.created) AS month_year,to_char(v.created, 'FMMonth') AS month_name,SUM(v.suckerno) AS sucker_count\n"
+                        + "FROM adempiere.tc_collectionjoinplant v JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"' AND v.created::date >= (current_date - interval '364 days') \n"
+                        + "AND v.created::date <= current_date GROUP BY date_trunc('month', v.created), to_char(v.created, 'FMMonth'))\n"
+                        + "SELECT to_char(date_trunc('month', current_date) - (m.month || ' months')::interval, 'FMMonth') AS month_name,COALESCE(vc.sucker_count, 0) AS sucker_count \n"
+                        + "FROM months m LEFT JOIN sucker_counts vc \n"
+                        + "ON date_trunc('month', current_date) - (m.month || ' months')::interval = vc.month_year\n"
+                        + "ORDER BY date_trunc('month', current_date) - (m.month || ' months')::interval;";
+            }else if(userInput.equals("all")) {
+                sql = "SELECT sum(v.suckerno) AS sucker_count FROM adempiere.tc_collectionjoinplant v\n"
+                        + "JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby\n"
+                        + "WHERE v.ad_client_id = "+clientId+" AND u.name = '"+user+"';";
+            }
+            if (sql == null) {
+                getFORoleReportSuckerCountResponse.setError("No SQL");
+                getFORoleReportSuckerCountResponse.setIsError(true);
+                return getFORoleReportSuckerCountResponseDocument;
+            }
+            pstm = DB.prepareStatement(sql, null);
+            rs = pstm.executeQuery();
+            int i = 1;
+            while (rs.next()) {
+                GetReportDataSuckerCount data = getFORoleReportSuckerCountResponse.addNewGetReportDataSuckerCount();
+                if (userInput.equals("day")) {
+                    String day_name = rs.getString("day_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(day_name);
+                    data.setCount(count);
+                    
+                    SXSSFRow tableDescriptionRow = sheet.createRow(i);
+                    SXSSFCell cell1 = tableDescriptionRow.createCell(0);
+                    cell1.setCellValue(day_name);
+                    cell1.setCellStyle(wrapStyle);
+
+                    SXSSFCell cell2 = tableDescriptionRow.createCell(1);
+                    cell2.setCellValue(count);
+                    cell2.setCellStyle(wrapStyle);
+                } else if (userInput.equals("week")) {
+                    String days_name = rs.getString("day_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(days_name);
+                    data.setCount(count);
+                    
+                    SXSSFRow tableDescriptionRow = sheet.createRow(i);
+                    SXSSFCell cell1 = tableDescriptionRow.createCell(0);
+                    cell1.setCellValue(days_name);
+                    cell1.setCellStyle(wrapStyle);
+
+                    SXSSFCell cell2 = tableDescriptionRow.createCell(1);
+                    cell2.setCellValue(count);
+                    cell2.setCellStyle(wrapStyle);
+                } else if (userInput.equals("month")) {
+                    String week_start = rs.getString("week_start");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(week_start);
+                    data.setCount(count);
+                    
+                    SXSSFRow tableDescriptionRow = sheet.createRow(i);
+                    SXSSFCell cell1 = tableDescriptionRow.createCell(0);
+                    cell1.setCellValue(week_start);
+                    cell1.setCellStyle(wrapStyle);
+
+                    SXSSFCell cell2 = tableDescriptionRow.createCell(1);
+                    cell2.setCellValue(count);
+                    cell2.setCellStyle(wrapStyle);
+                } else if (userInput.equals("year")) {
+                    String month_name = rs.getString("month_name");
+                    int count = rs.getInt("sucker_count");
+                    data.setLabelName(month_name);
+                    data.setCount(count);
+                    
+                    SXSSFRow tableDescriptionRow = sheet.createRow(i);
+                    SXSSFCell cell1 = tableDescriptionRow.createCell(0);
+                    cell1.setCellValue(month_name);
+                    cell1.setCellStyle(wrapStyle);
+
+                    SXSSFCell cell2 = tableDescriptionRow.createCell(1);
+                    cell2.setCellValue(count);
+                    cell2.setCellStyle(wrapStyle);
+                } else if (userInput.equals("all")) {
+                    int count = rs.getInt("sucker_count");
+                    data.setCount(count);
+                    
+                    SXSSFRow tableDescriptionRow = sheet.createRow(i);
+                    SXSSFCell cell1 = tableDescriptionRow.createCell(0);
+                    cell1.setCellValue("All");
+                    cell1.setCellStyle(wrapStyle);
+
+                    SXSSFCell cell2 = tableDescriptionRow.createCell(1);
+                    cell2.setCellValue(count);
+                    cell2.setCellStyle(wrapStyle);
+                }
+                i++;
+            }
+            // Write workbook to ByteArrayOutputStream
+            workbook.write(byteArrayOutputStream);
+            workbook.close();
+            byte[] excelBlobBytes = byteArrayOutputStream.toByteArray();
+            getFORoleReportSuckerCountResponse.setExcelBlob(excelBlobBytes);
+            getFORoleReportSuckerCountResponse.setIsError(false);
+        } catch (Exception e) {
+            getFORoleReportSuckerCountResponse.setError(e.getMessage());
+            getFORoleReportSuckerCountResponse.setIsError(true);
+        } finally {
+            trx.close();
+            getCompiereService().disconnect();
+            closeDbCon(pstm, rs);
+        }
+        return getFORoleReportSuckerCountResponseDocument;
+    }
+
+
+==================================================================================================================================================================
+Stage wise Contamination Dashboard query;-
+SELECT Category, SUM(TotalDiscardQuantity) AS TotalDiscardQuantity 
+FROM (
+    SELECT
+        CASE
+            WHEN pr.name LIKE 'BI%' OR pr.name LIKE 'N%' THEN 'Initiation'
+            WHEN pr.name LIKE 'BM%' OR pr.name LIKE 'M%' THEN 'Multiplication'
+            WHEN pr.name LIKE 'BE%' OR pr.name LIKE 'E%' THEN 'Elongation'
+            WHEN pr.name LIKE 'BR%' OR pr.name LIKE 'R%' THEN 'Rooting'
+            WHEN pr.name LIKE 'H0%' OR pr.name LIKE 'H%' THEN 'Hardening'
+            ELSE 'Other'
+        END AS Category,
+        o.discardqty AS TotalDiscardQuantity
+    FROM adempiere.tc_out o
+    JOIN adempiere.m_product pr ON pr.m_product_id = o.m_product_id
+    WHERE o.ad_client_id = 1000000
+) AS Subquery
+WHERE Category <> 'Other' 
+GROUP BY Category 
+ORDER BY 
+    CASE Category
+        WHEN 'Initiation' THEN 1
+        WHEN 'Multiplication' THEN 2
+        WHEN 'Elongation' THEN 3
+        WHEN 'Rooting' THEN 4
+        WHEN 'Hardening' THEN 5
+        ELSE 6
+    END;
+
+
+==================================================================================================================================================================
+To Sub culture Query:-
+Day:-
+SELECT day_info.day_name AS day_name,current_date,COALESCE(COUNT(v.*), 0) AS visit_count
+FROM (SELECT to_char(current_date, 'FMDay') AS day_name) AS day_info
+LEFT JOIN adempiere.tc_culturelabel v ON v.created::date = current_date - interval '21 days'
+AND v.ad_client_id = 1000000 AND v.isdiscarded = 'N' AND v.createdby IN 
+(SELECT ad_user_id FROM adempiere.ad_user WHERE name = 'lavan') GROUP BY day_info.day_name;
+
+Week:-
+WITH days AS (SELECT generate_series(0, 6) AS day_of_week),
+visit_counts AS (SELECT date_trunc('day', v.created) AS visit_day,to_char(v.created, 'FMDay') AS day_name,
+EXTRACT(dow FROM v.created) AS day_of_week,COUNT(*) AS visit_count FROM adempiere.tc_culturelabel v 
+JOIN adempiere.ad_user u ON u.ad_user_id = v.createdby WHERE v.ad_client_id = 1000000 
+AND v.isdiscarded = 'N' AND u.name = 'lavan' AND v.created::date >= current_date - interval '27 days' -- considering the 21 days completion
+AND v.created::date < current_date - interval '6 days' -- only up to the last 6 days from today
+GROUP BY date_trunc('day', v.created),to_char(v.created, 'FMDay'),EXTRACT(dow FROM v.created))
+SELECT (current_date + d.day_of_week * interval '1 day')::date AS dates,
+COALESCE(vc.day_name, to_char(current_date + d.day_of_week * interval '1 day', 'FMDay')) AS day_name,
+COALESCE(vc.visit_count, 0) AS visit_count FROM days d 
+LEFT JOIN visit_counts vc ON date_trunc('day', current_date + d.day_of_week * interval '1 day' - interval '21 days') = vc.visit_day 
+ORDER BY dates;
+
+Month:-
+
 
 
 
 ==================================================================================================================================================================
+User Log:-
+SELECT l.ad_changelog_id As id,t.name As TableName,c.name,l.record_id,l.oldvalue,l.newvalue,u.name,l.updatedby,l.updated FROM adempiere.ad_changelog l
+JOIN adempiere.ad_user u ON u.ad_user_id = l.updatedby
+JOIN adempiere.ad_table t ON l.ad_table_id = t.ad_table_id  
+JOIN adempiere.ad_column c ON c.ad_column_id = l.ad_column_id   
+where l.ad_client_id = 1000000 AND u.name = 'bmfc' AND l.created::date = CURRENT_DATE;
+
+
+==================================================================================================================================================================
+Stage wise Culture Distribution:-
+WITH categories AS (
+    SELECT 'Initiation' AS Category
+    UNION ALL SELECT 'Callusing'
+    UNION ALL SELECT 'Multiplication'
+    UNION ALL SELECT 'Elongation'
+    UNION ALL SELECT 'Rooting'
+    UNION ALL SELECT 'Hardening'
+),
+category_counts AS (
+    SELECT
+        CASE
+            WHEN pr.name LIKE 'BI%' OR pr.name LIKE 'N%' THEN 'Initiation'
+            WHEN pr.name LIKE 'BC%' THEN 'Callusing'
+            WHEN pr.name LIKE 'BM%' OR pr.name LIKE 'M%' THEN 'Multiplication'
+            WHEN pr.name LIKE 'BE%' OR pr.name LIKE 'E%' THEN 'Elongation'
+            WHEN pr.name LIKE 'BR%' OR pr.name LIKE 'R%' THEN 'Rooting'
+            WHEN pr.name LIKE 'BH%' OR pr.name LIKE 'H%' THEN 'Hardening'
+            ELSE 'Other'
+        END AS Category,
+        SUM(o.qtyonhand) AS TotalQuantity
+    FROM 
+        adempiere.m_storageonhand o
+    JOIN 
+        adempiere.m_product pr ON pr.m_product_id = o.m_product_id
+    WHERE 
+        o.ad_client_id = 1000000
+    GROUP BY 
+        CASE
+            WHEN pr.name LIKE 'BI%' OR pr.name LIKE 'N%' THEN 'Initiation'
+            WHEN pr.name LIKE 'BC%' THEN 'Callusing'
+            WHEN pr.name LIKE 'BM%' OR pr.name LIKE 'M%' THEN 'Multiplication'
+            WHEN pr.name LIKE 'BE%' OR pr.name LIKE 'E%' THEN 'Elongation'
+            WHEN pr.name LIKE 'BR%' OR pr.name LIKE 'R%' THEN 'Rooting'
+            WHEN pr.name LIKE 'BH%' OR pr.name LIKE 'H%' THEN 'Hardening'
+            ELSE 'Other'
+        END
+)
+SELECT 
+    c.Category, 
+    COALESCE(cc.TotalQuantity, 0) AS TotalQuantity
+FROM 
+    categories c
+LEFT JOIN 
+    category_counts cc ON c.Category = cc.Category
+ORDER BY 
+    CASE c.Category
+        WHEN 'Initiation' THEN 1
+        WHEN 'Callusing' THEN 2
+        WHEN 'Multiplication' THEN 3
+        WHEN 'Elongation' THEN 4
+        WHEN 'Rooting' THEN 5
+        WHEN 'Hardening' THEN 6
+        ELSE 7
+    END;
+
+
+
+==================================================================================================================================================================
+User Management report Role:-
+SELECT users, userId, personalCode, date,orderId, id, labelName,countValue,counts
+FROM (
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,Date(cl.created) AS date,
+o.tc_order_id As orderID,cl.tc_culturelabel_id AS id,'Culture Role' AS labelName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cl.created), o.tc_order_id,u.name) AS NUMERIC) AS countValue,COUNT(*) OVER (PARTITION BY cl.created, o.tc_order_id,u.name) AS counts FROM adempiere.tc_culturelabel cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_out o ON o.tc_out_id = cl.tc_out_id
+WHERE cl.AD_CLIENT_ID = $P{AD_CLIENT_ID} AND cl.isdiscarded = 'N' AND u.personalcode is not null
+UNION ALL
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,Date(cl.created) AS date,
+o.tc_mediaorder_id As orderID,cl.tc_medialabelQr_id AS id,'Media Role' AS labelName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cl.created), o.tc_mediaorder_id,u.name) AS NUMERIC) AS countValue,COUNT(*) OVER (PARTITION BY cl.created, o.tc_mediaorder_id,u.name) AS counts FROM adempiere.tc_medialabelQr cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_medialine o ON o.tc_medialine_id = cl.tc_medialine_id
+WHERE cl.AD_CLIENT_ID = $P{AD_CLIENT_ID} AND u.personalcode is not null
+UNION ALL
+SELECT u.name AS users,cl.createdby AS userId,u.personalcode AS personalCode,Date(cl.created) AS date,
+o.tc_order_id As orderID,cl.tc_culturelabel_id AS id,'QA Role' AS labelName,
+CAST(COUNT(*) OVER (PARTITION BY DATE(cl.created), o.tc_order_id,u.name) AS NUMERIC) AS countValue,COUNT(*) OVER (PARTITION BY cl.created, o.tc_order_id,u.name) AS counts FROM adempiere.tc_culturelabel cl 
+JOIN adempiere.ad_user u ON u.ad_user_id = cl.createdby JOIN adempiere.tc_out o ON o.tc_out_id = cl.tc_out_id
+WHERE cl.AD_CLIENT_ID = $P{AD_CLIENT_ID} AND cl.isdiscarded = 'Y' AND u.personalcode is not null    
+) AS combined WHERE combined.date >= $P{FromDate} AND combined.date < ($P{ToDate}::timestamp + INTERVAL '1 day') 
+ AND ($P{Label} IS NULL OR combined.labelName = $P{Label})  ORDER BY users,date,orderId;
+
+ --------------------
+ Current Date show records:-
+combined.date >= $P{FromDate} AND combined.date < ($P{ToDate}::timestamp + INTERVAL '1 day')
+--------------------
+
+
+
+
+==================================================================================================================================================================    
+get unique village name:-
+SELECT villagename FROM adempiere.tc_farmer WHERE ad_client_id = 1000000
+GROUP BY villagename HAVING COUNT(*) > 1
+UNION ALL
+SELECT villagename FROM adempiere.tc_farmer WHERE ad_client_id = 1000000
+GROUP BY villagename HAVING COUNT(*) = 1 ORDER BY villagename;
+
+==================================================================================================================================================================
+Get data for specific records:-
+
+SELECT name,tc_culturestage_id FROM adempiere.tc_culturestage WHERE ad_client_id = 1000000 AND
+ name IN ('Rooting','Hardening') ORDER BY tc_culturestage_id;
+
+
+==================================================================================================================================================================
+Tracebility Query:-
+
+ WITH RECURSIVE cte AS (
+SELECT cl.parentuuid,cl.tc_in_id,cl.tc_out_id,cl.c_uuid,loc.value AS location,cl.created,
+cl.cycleno,ps.name AS cropType,cs.name AS stage,var.name AS variety,cl.personal_code,ts.temperature AS temp,ts.humidity AS humidity,1 AS level
+FROM adempiere.tc_culturelabel cl JOIN adempiere.tc_out o ON o.tc_out_id = cl.tc_out_id
+JOIN adempiere.m_locator loc ON loc.m_locator_id = o.m_locator_id JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl.tc_culturestage_id JOIN adempiere.tc_variety var ON var.tc_variety_id = cl.tc_species_ids
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = loc.m_locatortype_id JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+WHERE cl.c_uuid =   $P{CultureLabelUUId} AND
+cl.ad_client_id =  $P{AD_CLIENT_ID}  AND DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus)      
+UNION ALL    
+SELECT cl2.parentuuid,cl2.tc_in_id,cl2.tc_out_id,cl2.c_uuid,loc.value AS location,cl2.created,cl2.cycleno,ps.name AS cropType,
+cs.name AS stage,var.name AS variety,cl2.personal_code,ts.temperature AS temp,ts.humidity AS humidity,cte.level + 1 AS level FROM cte
+JOIN adempiere.tc_culturelabel cl2 ON cte.parentuuid = cl2.c_uuid JOIN adempiere.tc_out o ON o.tc_out_id = cl2.tc_out_id
+JOIN adempiere.m_locator loc ON loc.m_locator_id = o.m_locator_id JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = cl2.tc_species_id
+JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = cl2.tc_culturestage_id JOIN adempiere.tc_variety var ON var.tc_variety_id = cl2.tc_species_ids
+JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = loc.m_locatortype_id JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lt.m_locatortype_id
+WHERE DATE(ts.created) = (SELECT MAX(DATE(created)) FROM adempiere.tc_temperaturestatus where created = ts.created))
+SELECT cte.parentuuid,cte.tc_in_id,cte.tc_out_id,cte.c_uuid,cte.location,cte.created,cte.cycleno,cte.cropType,cte.stage,cte.variety,cte.personal_code,
+MIN(cte.temp) AS min_temperature,MAX(cte.temp) AS max_temperature,MIN(cte.humidity) AS min_humidity,MAX(cte.humidity) AS max_humidity,cte.level FROM cte
+GROUP BY cte.parentuuid,cte.tc_in_id,cte.tc_out_id,cte.c_uuid,cte.location,cte.created,cte.cycleno,cte.cropType,cte.stage,cte.variety,cte.personal_code,cte.level
+UNION ALL
+SELECT DISTINCT tcc.parentuuid,tcc.tc_in_id,tcc.tc_out_id,tcc.c_uuid,loc.value AS location,tcc.created,0 AS cycleno,cte.cropType,pr.name AS stage,cte.variety,
+tcc.personalcode AS personal_code,NULL AS min_temperature,NULL AS max_temperature,NULL AS min_humidity,NULL AS max_humidity,cte.level FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid JOIN adempiere.tc_out eo ON eo.tc_out_id = tcc.tc_out_id
+JOIN adempiere.m_locator loc ON loc.m_locator_id = eo.m_locator_id JOIN adempiere.m_product pr ON pr.m_product_id = eo.m_product_id
+UNION ALL
+SELECT DISTINCT NULL AS parentuuid,0 AS tc_in_id,0 AS tc_out_id,tpt.c_uuid,NULL AS location,tpt.created,0 AS cycleno,cte.cropType,'Plant Tag' AS stage,
+cte.variety,NULL AS personal_code,NULL AS min_temperature,NULL AS max_temperature,NULL AS min_humidity,NULL AS max_humidity,cte.level FROM cte
+LEFT JOIN adempiere.tc_explantlabel tcc ON cte.parentuuid = tcc.c_uuid LEFT JOIN adempiere.tc_planttag tpt ON tcc.parentuuid = tpt.c_uuid
+WHERE tpt.c_uuid IS NOT NULL ORDER BY created ASC;
 
 
 ==================================================================================================================================================================
