@@ -684,7 +684,7 @@ REFERENCES adempiere.tc_discardtype(tc_discardtype_id);
         date DATE,
         personalCode VARCHAR(25));
 
-        ALTER TABLE adempiere.tc_qualitycheck ADD COLUMN CultureLabelUUId VARCHAR(36);
+        ALTER TABLE adempiere.tc_cultureLabel ADD COLUMN discardReason VARCHAR(255);
 
         ALTER TABLE adempiere.tc_mediaLabelQr
         ADD COLUMN discardDate DATE,
@@ -842,6 +842,9 @@ REFERENCES adempiere.tc_discardtype(tc_discardtype_id);
      adempiere.tc_virustesting(tc_virustesting_id)
     );
 
+        Alter table adempiere.tc_culturelabel add column tosubculturecheck CHAR(1) not null DEFAULT 'N'::bpchar;
+
+
         ## Explant LAbel:-
 
         CREATE TABLE adempiere.tc_explantLabel (
@@ -924,6 +927,8 @@ ALTER TABLE adempiere.tc_explantLabel
 ADD CONSTRAINT tc_explantLabel_tc_out_id_fkey
 FOREIGN KEY (tc_out_id)
 REFERENCES adempiere.tc_out(tc_out_id);
+
+
 
 
 ALTER TABLE adempiere.tc_primaryhardeningLabel add column lotNumber VARCHAR(1);
@@ -1014,6 +1019,19 @@ CREATE TABLE adempiere.tc_status (
         isactive CHAR(1) not null DEFAULT 'Y'::bpchar,
         c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
+
+CREATE TABLE adempiere.tc_lightstatus (
+        tc_lightstatus_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+        tc_lightstatus_uu VARCHAR(36) DEFAULT NULL::bpchar,
+        ad_client_id NUMERIC(10, 0) NOT NULL,
+        ad_org_id NUMERIC(10, 0) NOT NULL,
+        name varchar(25),
+        created TIMESTAMP without time zone DEFAULT now() not null,
+        createdby NUMERIC(10,0) not null,
+        updated TIMESTAMP without time zone DEFAULT now() not null,
+        updatedby NUMERIC(10,0) not null,
+        description VARCHAR(255),
+        isactive CHAR(1) not null DEFAULT 'Y'::bpchar);
 
 CREATE TABLE adempiere.tc_temperatureposition (
         tc_temperatureposition_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
