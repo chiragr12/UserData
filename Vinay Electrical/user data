@@ -1,0 +1,14 @@
+Scomp for vinay electrical:-
+scomp -javasource 11 -out lib/ve-xmlbeans.jar WEB-INF/xsd/ve.xsd
+
+Vinay Electrical side:-
+https://13.235.255.17:8443/webui/index.zul
+
+Terminal side:-
+ssh -i "pemFile/democ.pem" ubuntu@13.235.255.17
+
+Note:-
+If mvn clean install is not working first go to plugin and mfg plugin mvn clean install then go to com.pipra.ve plug in and enter mvn clean install if showing any error then go to idempiere and go to webservices plug in and go to mvn clean install after mvn clean install then go to plugin and go to com.pipra.ve and mvn clean install and you see it is working fine.
+
+Tissue culture :-
+scomp -javasource 11 -out lib/idempiere-xmlbeans.jar WEB-INF/xsd/idempiere-schema.xsd

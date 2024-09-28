@@ -730,5 +730,320 @@ JOIN LatestCultureDates5 cl5d ON cl5d.parentuuid5 = cl4d.cultureuuid4
 ORDER BY ic.initial_collection_date;
 
 
+====================================================================================================
+getUpcomingVisit:-
+public GetUpcomingVisitResponseDocument getUpcomingVisit(GetUpcomingVisitRequestDocument req) {
+        GetUpcomingVisitResponseDocument getUpcomingVisitResponseDocument = GetUpcomingVisitResponseDocument.Factory.newInstance();
+        GetUpcomingVisitResponse getUpcomingVisitResponse = getUpcomingVisitResponseDocument.addNewGetUpcomingVisitResponse();
+        GetUpcomingVisitRequest loginRequest = req.getGetUpcomingVisitRequest();
+        ADLoginRequest login = loginRequest.getADLoginRequest();
+        String serviceType = loginRequest.getServiceType();
+        int client = login.getClientID();
+        MAttachment attachment = null;
+        String base64 = "";
+        int tableId = MTable.getTable_ID("tc_farmer");
+        Trx trx = null;
+        PreparedStatement pstm = null;
+        ResultSet rs = null;
+        String searchKey = loginRequest.getSearchKey();
+        String selectedColumn = loginRequest.getSelectedColumn(); // Get the selected column from the request
+        try {
+            getCompiereService().connect();
+            CompiereService m_cs = getCompiereService();
+            Properties ctx = m_cs.getCtx();
+            String trxName = Trx.createTrxName(getClass().getName() + "_");
+            trx = Trx.get(trxName, true);
+            trx.start();
+            String err = login(login, webServiceName, "getVisitList", serviceType);
+            if (err != null && err.length() > 0) {
+                getUpcomingVisitResponse.setError(err);
+                getUpcomingVisitResponse.setIsError(true);
+                return getUpcomingVisitResponseDocument;
+            }
+            if (!serviceType.equalsIgnoreCase("getVisitList")) {
+                getUpcomingVisitResponse.setError("Service type " + serviceType + " not configured");
+                getUpcomingVisitResponse.setIsError(true);
+                return getUpcomingVisitResponseDocument;
+            }
+            StringBuilder sql = new StringBuilder("SELECT v.tc_visit_id AS id, v.mobileno AS mobileNo, v.date AS date, f.name AS farmerName, vt.name AS visitTypeName, s.name AS Status,f.tc_farmer_id as farmerId, \n"
+                    + "f.villagename AS villagename, f.address AS address, f.landmark AS landmark \n"
+                    + "FROM adempiere.tc_visit v \n"
+                    + "JOIN adempiere.tc_farmer f ON f.tc_farmer_id = v.tc_farmer_id \n"
+                    + "JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id \n"
+                    + "JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id \n"
+                    + "WHERE v.ad_client_id = " + client + " \n"
+                    + "AND s.name <> 'Cancelled' \n"
+                    + "AND v.date >= CURRENT_DATE \n");
+            
+            // List to store search keys
+            List<String> searchKeys = new ArrayList<>();
+
+            // Check if search key is provided and append the corresponding conditions
+            if (searchKey != null && !searchKey.trim().isEmpty()) {
+                if (selectedColumn != null && !selectedColumn.trim().isEmpty()) {
+                    // Add condition based on selected column
+                    switch (selectedColumn.toLowerCase()) {
+                        case "name":
+                            sql.append("AND f.name ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "villagename":
+                            sql.append("AND f.villagename ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "address":
+                            sql.append("AND f.address ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "landmark":
+                            sql.append("AND f.landmark ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "mobileno":
+                            sql.append("AND v.mobileno ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "date":
+                            sql.append("AND v.date::text ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "visittype":
+                            sql.append("AND vt.name ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;    
+                        default:
+                            sql.append("AND (f.name ILIKE '%' || ? || '%' \n"
+                                    + "OR f.villagename ILIKE '%' || ? || '%' \n"
+                                    + "OR f.address ILIKE '%' || ? || '%' \n"
+                                    + "OR v.mobileno ILIKE '%' || ? || '%' \n"
+                                    + "OR v.date::text ILIKE '%' || ? || '%' \n"
+                                    + "OR vt.name ILIKE '%' || ? || '%' \n"
+                                    + "OR f.landmark ILIKE '%' || ? || '%') ");
+                            // Add searchKey multiple times for each placeholder
+                            for (int i = 0; i < 7; i++) {
+                                searchKeys.add(searchKey);
+                            }
+                            break;
+                    }
+                } else {
+                    // If no specific column is selected, search all columns
+                    sql.append("AND (f.name ILIKE '%' || ? || '%' \n"
+                            + "OR f.villagename ILIKE '%' || ? || '%' \n"
+                            + "OR f.address ILIKE '%' || ? || '%' \n"
+                            + "OR v.mobileno ILIKE '%' || ? || '%' \n"
+                            + "OR v.date::text ILIKE '%' || ? || '%' \n"
+                            + "OR vt.name ILIKE '%' || ? || '%' \n"
+                            + "OR f.landmark ILIKE '%' || ? || '%') ");
+                    // Add searchKey multiple times for each placeholder
+                    for (int i = 0; i < 7; i++) {
+                        searchKeys.add(searchKey);
+                    }
+                }
+            }
+            sql.append("ORDER BY v.date");
+
+            // Prepare the statement and set parameters
+            pstm = DB.prepareStatement(sql.toString(), null);
+
+            // Set parameters for the prepared statement
+            for (int i = 0; i < searchKeys.size(); i++) {
+                pstm.setString(i + 1, searchKeys.get(i));
+            }
+
+            // Execute the query
+            rs = pstm.executeQuery();
+
+            while(rs.next()) {
+                GetUpcomingVisitData listOfVisits = getUpcomingVisitResponse.addNewGetUpcomingVisitData();
+                int VisitId = rs.getInt("id");
+                String Name = rs.getString("farmerName");
+                String VisitType = rs.getString("visitTypeName");
+                String Date = rs.getString("date");
+                String MobileNo = rs.getString("mobileNo");
+                String villageNumber = rs.getString("villagename");
+                String address = rs.getString("address");
+                String landmark = rs.getString("landmark");
+                int farmerId = rs.getInt("farmerId");
+
+                listOfVisits.setVisitId(VisitId);
+                listOfVisits.setFarmerName(Name);
+                listOfVisits.setVisitTypeName(VisitType);
+                listOfVisits.setDate(Date);
+                listOfVisits.setMobileNo(MobileNo);
+                listOfVisits.setAddress(address);
+                listOfVisits.setVillageNumber(villageNumber != null ? villageNumber : "");
+                listOfVisits.setLandmark(landmark != null ? landmark : "");
+                
+                attachment = MAttachment.get(ctx, tableId, farmerId);
+                if(attachment != null) {
+                    MAttachmentEntry[] entries = attachment.getEntries();
+                    for (int i = entries.length - 1; i >= 0; i--) {
+                        MAttachmentEntry entry = entries[i];
+                        byte[] data = entry.getData();
+                        base64 = Base64.getEncoder().encodeToString(data);
+                        ImageArray1 imageArray =  listOfVisits.addNewImageArray1();
+                        imageArray.setImage64(base64);
+                    }   
+                }else
+                    listOfVisits.addNewImageArray1();
+            }
+            trx.commit();           
+        }catch (Exception e) {
+            getUpcomingVisitResponse.setError(e.getMessage());
+            getUpcomingVisitResponse.setIsError(true);
+        }finally {
+            trx.close();
+            getCompiereService().disconnect();
+            closeDbCon(pstm, rs);
+        }
+        return getUpcomingVisitResponseDocument;
+    }
+
+
+    get Visit Api:-
+    GetVisitResponseDocument getVisitResponseDocument = GetVisitResponseDocument.Factory.newInstance();
+        GetVisitResponse getVisitResponse = getVisitResponseDocument.addNewGetVisitResponse();
+        GetVisitRequest loginRequest = req.getGetVisitRequest();
+        ADLoginRequest login = loginRequest.getADLoginRequest();
+        String serviceType = loginRequest.getServiceType();
+        int client = login.getClientID();
+        Trx trx = null;
+        String base64 = "";
+        int tableId = MTable.getTable_ID("tc_farmer");
+        MAttachment attachment = null;
+        PreparedStatement pstm = null;
+        ResultSet rs = null;
+        String searchKey = loginRequest.getSearchKey();
+        String selectedColumn = loginRequest.getSelectedColumn();
+        try {
+            getCompiereService().connect();
+            CompiereService m_cs = getCompiereService();
+            Properties ctx = m_cs.getCtx();
+            String trxName = Trx.createTrxName(getClass().getName() + "_");
+            trx = Trx.get(trxName, true);
+            trx.start();
+            String err = login(login, webServiceName, "getVisitList", serviceType);
+            if (err != null && err.length() > 0) {
+                getVisitResponse.setError(err);
+                getVisitResponse.setIsError(true);
+                return getVisitResponseDocument;
+            }
+            if (!serviceType.equalsIgnoreCase("getVisitList")) {
+                getVisitResponse.setError("Service type " + serviceType + " not configured");
+                getVisitResponse.setIsError(true);
+                return getVisitResponseDocument;
+            }
+            StringBuilder sql = new StringBuilder("SELECT f.name AS Name, vt.name AS VisitType, v.date AS Date, f.mobileno AS MobileNo,f.tc_farmer_id As farmerId, ")
+                    .append("v.tc_visit_id AS ID, s.name AS status FROM adempiere.tc_visit v ")
+                    .append("JOIN adempiere.tc_farmer f ON f.tc_farmer_id = v.tc_farmer_id ")
+                    .append("JOIN adempiere.tc_status s ON s.tc_status_id = v.tc_status_id ")
+                    .append("JOIN adempiere.tc_visittype vt ON vt.tc_visittype_id = v.tc_visittype_id ")
+                    .append("WHERE v.ad_client_id = ? ");
+
+            List<String> searchKeys = new ArrayList<>();
+
+            if (searchKey != null && !searchKey.trim().isEmpty()) {
+                if (selectedColumn != null && !selectedColumn.trim().isEmpty()) {
+                    switch (selectedColumn.toLowerCase()) {
+                        case "name":
+                            sql.append("AND f.name ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "status":
+                            sql.append("AND s.name ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "mobileno":
+                            sql.append("AND f.mobileno ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "date":
+                            sql.append("AND v.date::text ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;
+                        case "visittype":
+                            sql.append("AND vt.name ILIKE '%' || ? || '%' ");
+                            searchKeys.add(searchKey);
+                            break;    
+                        default:
+                            sql.append("AND (f.name ILIKE '%' || ? || '%' ")
+                               .append("OR s.name ILIKE '%' || ? || '%' ")
+                               .append("OR f.mobileno ILIKE '%' || ? || '%' ")
+                               .append("OR v.date::text ILIKE '%' || ? || '%' ")
+                               .append("OR vt.name ILIKE '%' || ? || '%') ");
+                            for (int i = 0; i < 5; i++) {
+                                searchKeys.add(searchKey);
+                            }
+                            break;
+                    }
+                } else {
+                    sql.append("AND (f.name ILIKE '%' || ? || '%' ")
+                       .append("OR s.name ILIKE '%' || ? || '%' ")
+                       .append("OR f.mobileno ILIKE '%' || ? || '%' ")
+                       .append("OR v.date::text ILIKE '%' || ? || '%' ")
+                       .append("OR vt.name ILIKE '%' || ? || '%') ");
+                    for (int i = 0; i < 5; i++) {
+                        searchKeys.add(searchKey);
+                    }
+                }
+            }
+            sql.append("ORDER BY v.date");
+
+            pstm = DB.prepareStatement(sql.toString(), null);
+            pstm.setInt(1, client);
+
+            for (int i = 0; i < searchKeys.size(); i++) {
+                pstm.setString(i + 2, searchKeys.get(i)); // Parameters for searchKeys start from index 2
+            }
+            rs = pstm.executeQuery();
+            while (rs.next()) {
+                ListOfVisit listOfVisits = getVisitResponse.addNewListOfVisit();
+                String Name = rs.getString("Name");
+                String VisitType = rs.getString("VisitType");
+                String Date = rs.getString("Date");
+                String MobileNo = rs.getString("MobileNo");
+                int VisitId = rs.getInt("ID");
+                String Status = rs.getString("status");
+                int farmerId = rs.getInt("farmerId");
+
+                listOfVisits.setVisitId(VisitId);
+                listOfVisits.setFarmerId(farmerId);
+                listOfVisits.setName(Name);
+                listOfVisits.setVisitType(VisitType);
+                listOfVisits.setDate(Date);
+                listOfVisits.setMobileNo(MobileNo);
+                listOfVisits.setStatus(Status);
+
+                attachment = MAttachment.get(ctx, tableId, farmerId);
+                if (attachment != null) {
+                    MAttachmentEntry[] entries = attachment.getEntries();
+                    for (int i = entries.length - 1; i >= 0; i--) {
+                        MAttachmentEntry entry = entries[i];
+                        byte[] data = entry.getData();
+                        base64 = Base64.getEncoder().encodeToString(data);
+                        ImageArray imageArray = listOfVisits.addNewImageArray1();
+                        imageArray.setImage64(base64);
+                    }
+                } else {
+                    listOfVisits.addNewImageArray1();
+                }
+            }
+            trx.commit();
+        } catch (Exception e) {
+            if (trx != null) {
+                trx.rollback();
+            }
+            getVisitResponse.setError(e.getMessage());
+            getVisitResponse.setIsError(true);
+        } finally {
+            DB.close(rs, pstm);
+            if (trx != null) {
+                trx.close();
+            }
+        }
+        return getVisitResponseDocument;
+
+        qedi ovmc ddho rxgr
+
 
 ==================================================================================================

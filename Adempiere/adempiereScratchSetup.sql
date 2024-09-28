@@ -72,7 +72,20 @@ Adempiere Setep:-
 	psql -U adempiere -d idempiere < /home/chirag/ExpDat.dmp (requirement according change file path)
 	(if any requirement give file executing permission)
 
-	psql -U adempiere -d idempiere6 < /home/chirag/austrak_C.dmp (This code is also setup in Austrak)
+	psql -U adempiere -d idempiere6 < /home/chirag/austrak_C.dmp (This code is also setup in Austrak) datave.dmp
+==============================================================================================================================================================
+Fro Vinay Electricals:-
+	createdb  --template=template0 -E UNICODE -O adempiere -U adempiere erpVe (password of adempiere)
+	psql -d erpVe -U adempiere -c "ALTER ROLE adempiere SET search_path TO adempiere, pg_catalog"
+
+	Restore:-
+	psql -U adempiere -d erpVe < /home/chirag/datave.dmp   //every time change db name name your back up file name
+
+	Backup:-
+	pg_dump -U adempiere -W erpVe > /home/chirag/datave.dmp
+
+Server to Local copy:-
+scp -i "pemFile/democ.pem" ubuntu@13.235.255.17:/home/ubuntu/dataveN.dmp /home/chirag/
 
 
 ==============================================================================================================================================================
@@ -86,50 +99,9 @@ If you are another database your system:-
 This code is use your Database complete backup
 pg_dump -U adempiere -W idempiere5 > /home/chirag/datas.dmp(-w Without password and -W With Password)
 
+
+
 ==============================================================================================================================================================
-
-
-Old Scratch Setup Throw Error :-
-
--- 1. First cloning the adempiere project from Git
-
--- 2. Second install a maven and go to adempiere folder with terminal
-
--- 3. type a command :-  mvn verify
-
--- 4. open a project with Eclipse
-
--- 5. org.idempiere.p2.targetplatform (this folder is base folder of all project )
-
--- 6. show any maven or java error quick fix ignore this error
-
--- 7. and go to terminal and go to 
--- 	cd idempiere/org.adempiere.server-feature/utils.unix/
--- 	sudo chmod +x setVar.sh
--- 	sudo chmod +x getVar.sh
-
--- 	and run this script in terminal
--- 	./getVar.sh
--- 	./setVar.sh
-
--- 	and go to Eclipse and select all folder and press refress (F5)
-
--- 8. go to file idempiereEnv.properties and add only one line
--- 	  ADEMPIERE_KEYSTOREPASS=
-
--- 	and save file 
--- 	and go to Eclipse and select all folder and press refress (F5)
-
--- 9. Eclipse go to run -> run configuration -> install.app (Proper running)
---     and fill up the path and requiredment details
-
--- 10. Eclipse go to run -> run configuration -> server.product (if put hardcoded password then working otherwise throw Fatal password error)
--- 	DB_PostgreSQL.java file add hardcoded password
-
--- 	if (!poolProperties.containsKey("password")) { //line no 756
---     			poolProperties.put("password", "adempiere");(this line password added)
---     		}	
-
 
 
 new ui Adempiere Setup our system:-

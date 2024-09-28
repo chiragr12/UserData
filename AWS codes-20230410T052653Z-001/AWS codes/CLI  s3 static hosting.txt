@@ -8,6 +8,7 @@ Make JSON FILE NAME - policy_s3.json
 ## check file exix or nor
 dir
 ##json file create in user/lenovo/ctrl+v
+Added Bucket policy inside permission tab in s3 bucket:-
 
 {
     "Version": "2012-10-17",

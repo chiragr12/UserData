@@ -18,7 +18,17 @@
     surveyNo VARCHAR(10),
     villageName VARCHAR(50),
     mobileNo VARCHAR(10))
-    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,;
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar;
+
+    ALTER TABLE adempiere.tc_farmer ADD COLUMN talukName VARCHAR(25);
+
+ALTER TABLE adempiere.tc_farmer ADD COLUMN District VARCHAR(25);
+
+ALTER TABLE adempiere.tc_farmer ADD COLUMN City VARCHAR(25);
+
+ALTER TABLE adempiere.tc_farmer ADD COLUMN State VARCHAR(25);
+
+ALTER TABLE adempiere.tc_farmer ADD COLUMN pinCode VARCHAR(6);
 
 
     ALTER TABLE adempiere.tc_farmer
@@ -497,6 +507,8 @@ First Visit:-
         isactive CHAR(1) not null DEFAULT 'Y'::bpchar, 
         c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
         isdefault CHAR(1) NOT NULL DEFAULT 'N'::bpchar);
+
+     ALTER TABLE adempiere.tc_machinetype ADD COLUMN ismediatype CHAR(1) NOT NULL DEFAULT 'N'::bpchar;
     
     --     CREATE TABLE adempiere.tc_cultureoperationdetails (
     --     tc_cultureoperationdetails_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
@@ -660,6 +672,24 @@ ALTER TABLE adempiere.tc_qualitycheck
 ADD CONSTRAINT tc_qualitycheck_tc_discardtype_id_fkey
 FOREIGN KEY (tc_discardtype_id)
 REFERENCES adempiere.tc_discardtype(tc_discardtype_id);
+
+ALTER TABLE adempiere.tc_mediaorder
+ADD COLUMN m_product_id NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_mediaorder
+ADD CONSTRAINT tc_mediaorder_m_product_id_fkey
+FOREIGN KEY (m_product_id)
+REFERENCES adempiere.m_product(m_product_id);
+
+ALTER TABLE adempiere.tc_mediaorder ADD COLUMN quantity NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_mediaorder
+ADD COLUMN ad_user_id NUMERIC(10,0);
+
+ALTER TABLE adempiere.tc_mediaorder
+ADD CONSTRAINT tc_mediaorder_ad_user_id_fkey
+FOREIGN KEY (ad_user_id)
+REFERENCES adempiere.ad_user(ad_user_id);
 
         //QAData:-
 
@@ -969,6 +999,22 @@ CREATE TABLE adempiere.tc_primaryhardeningLabel (
 
 ALTER TABLE adempiere.tc_secondaryhardeningLabel add column serialNumber VARCHAR(5);
 
+CREATE TABLE adempiere.pi_userToken (
+    pi_userToken_ID SERIAL PRIMARY KEY,
+    ad_client_ID NUMERIC(10, 0) NOT NULL,
+    ad_org_ID NUMERIC(10, 0) NOT NULL,
+    created timestamp without time zone NOT NULL DEFAULT now(),
+    createdby numeric(10,0) NOT NULL,
+    updated timestamp without time zone NOT NULL DEFAULT now(),
+    updatedby numeric(10,0) NOT NULL,
+    ad_user_ID NUMERIC(10,0),   
+    deviceType varchar(50),
+    deviceToken varchar(500),
+    FOREIGN KEY (ad_client_iD) REFERENCES adempiere.ad_client(ad_client_id),
+    FOREIGN KEY (ad_org_iD) REFERENCES adempiere.ad_org(ad_org_id),
+    FOREIGN KEY (createdby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (updatedby) REFERENCES adempiere.ad_user(ad_user_id),
+    FOREIGN KEY (ad_user_ID) REFERENCES adempiere.ad_user(ad_user_ID));
 
 //Secondery Hardening:-
 CREATE TABLE adempiere.tc_secondaryhardeningLabel (
@@ -1054,6 +1100,20 @@ CREATE TABLE adempiere.tc_sensortype (
     ad_client_id NUMERIC(10, 0) NOT NULL,
     ad_org_id NUMERIC(10, 0) NOT NULL,
     name VARCHAR(30),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar);
+
+CREATE TABLE adempiere.tc_tcpf (
+    tc_tcpf_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_tcpf_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name VARCHAR(30),value varchar(25),
+    codeNo VARCHAR(10) NOT NULL,
     created TIMESTAMP without time zone DEFAULT now() not null,
     createdby numeric(10,0) not null,
     updated TIMESTAMP without time zone DEFAULT now() not null,
@@ -1334,42 +1394,36 @@ CREATE TABLE adempiere.tc_discardtype (
     isactive CHAR(1) not null DEFAULT 'Y'::bpchar
 );
 
+CREATE TABLE adempiere.tc_mediadiscardtype (
+    tc_mediadiscardtype_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_mediadiscardtype_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    name varchar(25),
+    created TIMESTAMP without time zone DEFAULT now() not null,
+    createdby numeric(10,0) not null,
+    updated TIMESTAMP without time zone DEFAULT now() not null,
+    updatedby NUMERIC(10,0) not null,
+    description VARCHAR(255),
+    isactive CHAR(1) not null DEFAULT 'Y'::bpchar
+);
 
-
-WITH RECURSIVE cte AS (
-  -- Anchor query
-  SELECT l.parentuuid, l.tc_in_id, l.tc_out_id, l.c_uuid, lo.value AS location, l.created, l.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
-         l.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 1 AS level
-  FROM adempiere.tc_culturelabel l
-  JOIN adempiere.tc_out o ON o.tc_out_id = l.tc_out_id
-  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
-  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = l.tc_species_id
-  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = l.tc_culturestage_id
-  JOIN adempiere.tc_variety v ON v.tc_variety_id = l.tc_species_ids
-  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
-  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
-       FROM adempiere.tc_temperaturestatus ts
-       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
-  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
-  WHERE l.c_uuid =   $P{CultureLabelUUId} AND l.ad_client_id =  $P{AD_CLIENT_ID} 
-
-  UNION ALL
-
-  -- Recursive query
-  SELECT t2.parentuuid, t2.tc_in_id, t2.tc_out_id, t2.c_uuid, lo.value AS location, t2.created, t2.cycleno, ps.name AS cropType, cs.name AS stage, v.name AS variety,
-         t2.personal_code, ts.temperature AS temp, ts.humidity AS humidity, 2 AS level
-  FROM cte t1
-  JOIN adempiere.tc_culturelabel t2 ON t1.parentuuid = t2.c_uuid
-  JOIN adempiere.tc_out o ON o.tc_out_id = t2.tc_out_id
-  JOIN adempiere.m_locator lo ON lo.m_locator_id = o.m_locator_id
-  JOIN adempiere.tc_plantspecies ps ON ps.tc_plantspecies_id = t2.tc_species_id
-  JOIN adempiere.tc_culturestage cs ON cs.tc_culturestage_id = t2.tc_culturestage_id
-  JOIN adempiere.tc_variety v ON v.tc_variety_id = t2.tc_species_ids
-  JOIN adempiere.m_locatortype lt ON lt.m_locatortype_id = lo.m_locatortype_id
-  JOIN (SELECT ts.m_locatortype_id, MAX(ts.created) AS max_created
-       FROM adempiere.tc_temperaturestatus ts
-       GROUP BY ts.m_locatortype_id) max_ts ON max_ts.m_locatortype_id = lo.m_locatortype_id
-  JOIN adempiere.tc_temperaturestatus ts ON ts.m_locatortype_id = lo.m_locatortype_id AND ts.created = max_ts.max_created
-)
-SELECT * FROM cte;
+CREATE TABLE adempiere.tc_primaryHardeningcultureS (
+    tc_primaryHardeningcultureS_id NUMERIC(10,0) NOT NULL PRIMARY KEY,
+    tc_primaryHardeningcultureS_uu VARCHAR(36) DEFAULT NULL::bpchar,
+    ad_client_id NUMERIC(10, 0) NOT NULL,
+    ad_org_id NUMERIC(10, 0) NOT NULL,
+    created TIMESTAMP without time zone DEFAULT now() NOT NULL,
+    createdby NUMERIC(10,0) NOT NULL,
+    updated TIMESTAMP without time zone DEFAULT now() NOT NULL,
+    updatedby NUMERIC(10,0) NOT NULL,
+    description VARCHAR(255),
+    isactive CHAR(1) NOT NULL DEFAULT 'Y'::bpchar,
+    c_uuId VARCHAR(36) DEFAULT NULL::bpchar,
+    cultureUUId VARCHAR(36),
+    tc_culturelabel_id INTEGER,
+    tc_primaryhardeningLabel_id INTEGER,
+    FOREIGN KEY (tc_culturelabel_id) REFERENCES adempiere.tc_culturelabel(tc_culturelabel_id),
+    FOREIGN KEY (tc_primaryhardeningLabel_id) REFERENCES adempiere.tc_primaryhardeningLabel(tc_primaryhardeningLabel_id)
+);
 

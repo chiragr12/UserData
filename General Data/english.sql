@@ -1,0 +1,11 @@
+sophisticated = Jatil  Ex. chirag sophisticated our target
+revolution = Krantikarti Ex. After AI coming revolution Every softwere field 
+revolutionize = Krantikarti Badlav
+spread = Phailana
+robust = Majboot
+efficient = kushal
+tailored = anuroop
+enhanced = badaya or increase
+realm = field
+therefore = Isliye or so
+thereby = jiske chalte
